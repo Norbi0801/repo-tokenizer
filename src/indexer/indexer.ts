@@ -93,6 +93,12 @@ export class IndexManager {
     try {
       if (repositoryHandle.type === 'git') {
         const repo = repositoryHandle.repository as GitRepository;
+        if (options.gitSubmodules !== false) {
+          await repo.updateSubmodules().catch(() => undefined);
+        }
+        if (options.gitLfs !== false) {
+          await repo.installLfs().catch(() => undefined);
+        }
         const snapshot = await repo.createSnapshot({ ref: options.ref, sparsePatterns: options.sparsePatterns });
         basePath = snapshot.path;
         ref = snapshot.commit;
@@ -140,6 +146,9 @@ export class IndexManager {
           }
         } else {
           baseIndex = this.findLatestIndex(spec);
+        }
+        if (!changedPathsSet && options.includePaths && options.includePaths.length > 0) {
+          changedPathsSet = new Set(options.includePaths);
         }
       }
 
@@ -240,7 +249,8 @@ export class IndexManager {
           continue;
         }
         const normalized = normalizer.normalize(raw);
-        const sanitized = sanitizer.sanitize(normalized.normalized);
+        const textForScan = normalized.normalized;
+        const sanitized = sanitizer.sanitize(textForScan);
         const fileHash = createHash('sha256').update(sanitized.sanitized).digest('hex');
         const language = detectLanguageFromPath(file.path);
 
@@ -269,8 +279,17 @@ export class IndexManager {
         };
 
         fileContents.set(file.path, sanitized.sanitized);
+        files.push({
+          path: file.path,
+          size: detection.size,
+          hash: fileHash,
+          language,
+          executable: file.executable,
+          detectionReason: detection.reason,
+        });
+        fileLanguageByHash.set(fileHash, language);
 
-        const secretsForFile = secretScanner ? secretScanner.scan(sanitized.sanitized, file.path) : [];
+        const secretsForFile = secretScanner ? secretScanner.scan(textForScan, file.path) : [];
         secretFindings.push(...secretsForFile);
 
         const generatedChunks = this.chunker.generate(chunkInput, chunkingOptions).map((chunk) =>
@@ -287,21 +306,17 @@ export class IndexManager {
           chunks.push(chunk);
         }
 
-        const metadata: IndexFileMetadata = {
-          path: file.path,
-          size: detection.size,
-          hash: fileHash,
-          language,
-          executable: file.executable,
-          detectionReason: detection.reason,
-        };
-        files.push(metadata);
-        fileLanguageByHash.set(fileHash, language);
-
         this.chunkCache.set(fileHash, {
           path: file.path,
           chunks: filteredChunks.map((chunk) => cloneChunk(chunk)),
-          file: metadata,
+          file: {
+            path: file.path,
+            size: detection.size,
+            hash: fileHash,
+            language,
+            executable: file.executable,
+            detectionReason: detection.reason,
+          },
           content: sanitized.sanitized,
           language,
           secrets: secretsForFile.map((finding) => ({ ...finding })),

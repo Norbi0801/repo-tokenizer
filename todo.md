@@ -45,7 +45,7 @@
 - [x] Zweryfikować zgodność z wymaganiami air-gap (brak telemetrii, brak zależności sieciowych w trybie offline).
 
 ## Faza 6 – Integracje, wydajność i obserwowalność
-- [ ] Obsłużyć Git submodules, Git LFS oraz worktrees w pipeline'ie ingestu.
+- [x] Obsłużyć Git submodules, Git LFS oraz worktrees w pipeline'ie ingestu.
 - [ ] Dostosować integracje z GitHub/GitLab (indeksowanie PR diff, komentarze, status checks).
 - [ ] Przygotować hooki (pre-commit, job CI „index repo”) i raportowanie metryk do pipeline'ów.
 - [ ] Zaimplementować równoległe przetwarzanie, back-pressure IO, sharding indeksu i mechanizmy resume.
@@ -72,3 +72,10 @@
 - [ ] Podnieść `rimraf` do `^4` i zaktualizować skrypty build/cleanup.
 - [ ] Zastąpić `@humanwhocodes/config-array` oraz `@humanwhocodes/object-schema` wersjami `@eslint/*`.
 - [ ] Zaktualizować `eslint` do wspieranej wersji zgodnie z polityką ESLint.
+
+## Faza 10 – Stabilność i dokumentacja
+- [ ] Naprawić `README.md` (usunięcie znaków NUL, odtworzenie podstawowej dokumentacji projektu).
+- [ ] Zsynchronizować typy (np. `IndexOptions` ↔ `IndexingConfig`) i zapewnić, że `npm run build/test` przechodzą w trybie strict.
+- [ ] Dodać efektywny diff dla repo filesystemowych (mtime/hash cache) i pokryć testami scenariusze watch/incremental.
+- [ ] Wprowadzić fallback/detekcję dla `tar`/`unzip` w `openArchive` oraz testy dla brakujących narzędzi.
+- [ ] Zweryfikować konfigurację build (`tsconfig.rootDir`) i podjąć decyzję ws. publikowania `dist/` do VCS.

@@ -54,6 +54,22 @@ export class GitRepository {
     return this.ensureLocalPath();
   }
 
+  async updateSubmodules(): Promise<void> {
+    const cwd = await this.ensureLocalPath();
+    await runCommand('git', ['submodule', 'update', '--init', '--recursive'], {
+      cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    }).catch(() => undefined);
+  }
+
+  async installLfs(): Promise<void> {
+    const cwd = await this.ensureLocalPath();
+    await runCommand('git', ['lfs', 'install', '--local'], {
+      cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    }).catch(() => undefined);
+  }
+
   async listReferences(): Promise<GitReference[]> {
     const cwd = await this.ensureLocalPath();
     const defaultBranch = await this.getDefaultBranch();
@@ -217,6 +233,10 @@ export class GitRepository {
         cwd: this.localPath,
         env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
       });
+      await runCommand('git', ['lfs', 'install', '--local'], {
+        cwd: this.localPath,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+      }).catch(() => undefined);
       return this.localPath;
     }
     if (!this.config.url) {

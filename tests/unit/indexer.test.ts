@@ -32,6 +32,7 @@ describe('IndexManager', () => {
         ruleId: 'api-key',
       });
       expect(result.fileContents['safe.txt']).toContain('hello');
+      expect(result.fileContents['secret.env']).toBe('API_KEY=***');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -62,7 +63,7 @@ describe('IndexManager', () => {
 
       expect(second.files).toHaveLength(2);
       expect(second.fileContents['a.txt']).toBe('version2');
-      expect(second.fileContents['b.txt']).toBe('MY_SECRET=one-two-three');
+      expect(second.fileContents['b.txt']).toBe('MY_SECRET=***');
       const bSecret = second.secretFindings.find((finding) => finding.path === 'b.txt');
       expect(bSecret).toBeDefined();
       const chunkIdsFirst = first.chunks

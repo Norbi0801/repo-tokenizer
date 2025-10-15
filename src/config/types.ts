@@ -11,6 +11,9 @@ export interface IndexingConfig {
   sparsePatterns?: string[];
   scanSecrets?: boolean;
   secretPatterns?: SecretPattern[];
+  gitSubmodules?: boolean;
+  gitLfs?: boolean;
+  gitWorktree?: boolean;
 }
 
 export interface ExportConfig {
