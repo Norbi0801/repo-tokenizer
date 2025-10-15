@@ -24,6 +24,11 @@ export interface ListFilesOptions {
   sparsePatterns?: string[];
 }
 
+export interface DiffResult {
+  changed: string[];
+  deleted: string[];
+}
+
 export interface FileEntry {
   path: string;
   size: number;

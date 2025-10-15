@@ -30,12 +30,12 @@
 - [x] Udokumentować mechanizmy filtracji i zapewnić możliwość testowania wzorców (np. tryb dry-run).
 
 ## Faza 4 – API, eksport i CLI
-- [ ] Zaimplementować MCP server z narzędziami `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
-- [ ] Przygotować formaty eksportu JSONL i SQLite oraz strumieniowanie wyników z kontrolą back-pressure.
-- [ ] Opracować SDK/klientów referencyjnych (Node.js/Python) i wygenerować specyfikację OpenAPI.
-- [ ] Dodać webhooki/kolejki (SQS/NATS) do asynchronicznej dostawy indeksów.
-- [ ] Dostarczyć CLI (`init`, `index`, `serve`, `export`) z konfiguracją YAML/TOML, profilami i autouzupełnianiem powłoki.
-- [ ] Udokumentować API, CLI i przykładowe przepływy integracyjne.
+- [x] Zaimplementować MCP server z narzędziami `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
+- [x] Przygotować formaty eksportu JSONL i SQLite oraz strumieniowanie wyników z kontrolą back-pressure.
+- [x] Opracować SDK/klientów referencyjnych (Node.js/Python) i wygenerować specyfikację OpenAPI.
+- [x] Dodać webhooki/kolejki (SQS/NATS) do asynchronicznej dostawy indeksów.
+- [x] Dostarczyć CLI (`init`, `index`, `serve`, `export`) z konfiguracją YAML/TOML, profilami i autouzupełnianiem powłoki.
+- [x] Udokumentować API, CLI i przykładowe przepływy integracyjne.
 
 ## Faza 5 – Inkrementalne aktualizacje i bezpieczeństwo
 - [ ] Zaimplementować analizę diff (git diff vs ostatni snapshot) oraz cache tokenizacji po hashach treści.

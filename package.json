@@ -2,6 +2,9 @@
   "name": "repo-tokenizer",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "repo-tokenizer-mcp": "dist/cli/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -12,7 +15,15 @@
   "engines": {
     "node": ">=20"
   },
-  "dependencies": {},
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "commander": "^11.1.0",
+    "fastify": "^4.25.2",
+    "js-yaml": "^4.1.0",
+    "minimatch": "^9.0.3",
+    "sql.js": "^1.9.0",
+    "toml": "^3.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "eslint": "^8.56.0",

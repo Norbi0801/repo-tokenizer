@@ -4,6 +4,7 @@ import { runCommand } from '../common/exec';
 import { createTemporaryDirectory } from '../common/temp';
 import { IgnoreMatcher } from '../common/ignore';
 import {
+  DiffResult,
   FileEntry,
   GitReference,
   GitRefType,
@@ -111,6 +112,32 @@ export class GitRepository {
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     });
     return stdout.trim();
+  }
+
+  async listChangedFiles(baseRef: string, headRef: string): Promise<DiffResult> {
+    const cwd = await this.ensureLocalPath();
+    const { stdout } = await runCommand('git', ['diff', '--name-status', baseRef, headRef], {
+      cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+    const changed: string[] = [];
+    const deleted: string[] = [];
+    stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        const [status, path] = line.split(/\s+/, 2);
+        if (!status || !path) {
+          return;
+        }
+        if (status.startsWith('D')) {
+          deleted.push(path);
+        } else {
+          changed.push(path);
+        }
+      });
+    return { changed, deleted };
   }
 
   async createSnapshot(options: { ref?: string; sparsePatterns?: string[] } = {}): Promise<Snapshot> {
