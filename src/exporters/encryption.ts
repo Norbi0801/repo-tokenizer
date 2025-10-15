@@ -26,7 +26,9 @@ export function createEncryptedFileWriter(path: string, password: string): Encry
       await once(cipher, 'finish');
       const tag = cipher.getAuthTag();
       out.write(tag);
-      await new Promise<void>((resolve, reject) => out.end((err) => (err ? reject(err) : resolve())));
+      await new Promise<void>((resolve, reject) =>
+        out.end((err?: Error | null) => (err ? reject(err) : resolve())),
+      );
     },
   };
 }

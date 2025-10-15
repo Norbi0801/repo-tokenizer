@@ -65,3 +65,10 @@
 - [ ] Zaprojektować i wdrożyć system rekomendacji kontekstu oraz inteligentne profile chunkingu per język.
 - [ ] Zbudować mapowanie test ⇄ plik źródłowy oraz indeks symboli/graf zależności.
 - [ ] Przygotować roadmapę na dalsze funkcje (embeddingi, hybrydowe wyszukiwanie, powiadomienia o jakości indeksu).
+
+## Faza 9 – Modernizacja zależności
+- [ ] Zastąpić `glob@7.x` wersją `^9` (lub kompatybilnym zamiennikiem) i zweryfikować wpływ na kod.
+- [ ] Usunąć `inflight@1.0.6`, migrując na rekomendowany mechanizm (`lru-cache` lub natywne Promise caching).
+- [ ] Podnieść `rimraf` do `^4` i zaktualizować skrypty build/cleanup.
+- [ ] Zastąpić `@humanwhocodes/config-array` oraz `@humanwhocodes/object-schema` wersjami `@eslint/*`.
+- [ ] Zaktualizować `eslint` do wspieranej wersji zgodnie z polityką ESLint.

@@ -34,17 +34,15 @@ export async function runCommand(
     });
 
     return {
-      stdout: result.stdout.toString('utf8'),
-      stderr: result.stderr.toString('utf8'),
+      stdout: result.stdout,
+      stderr: result.stderr,
     };
   } catch (error) {
     if (error instanceof Error) {
       const stdout =
-        (error as { stdout?: Buffer | string }).stdout?.toString?.('utf8') ??
-        '';
+        (error as { stdout?: Buffer | string }).stdout ?? '';
       const stderr =
-        (error as { stderr?: Buffer | string }).stderr?.toString?.('utf8') ??
-        '';
+        (error as { stderr?: Buffer | string }).stderr ?? '';
       const cmdString = [file, ...args].join(' ');
       throw new Error(
         `Command failed (${cmdString}): ${error.message}\nstdout: ${stdout}\nstderr: ${stderr}`,

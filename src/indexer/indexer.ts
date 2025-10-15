@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import minimatch from 'minimatch';
+import { minimatch } from 'minimatch';
 import { openRepository, GitRepository, FilesystemRepository } from '../ingest';
 import { Chunker, tokenizerRegistry, ChunkingOptions, Chunk } from '../chunker';
 import {
@@ -72,13 +72,17 @@ function cloneChunk(chunk: IndexChunk): IndexChunk {
 export class IndexManager {
   private readonly indexes = new Map<string, IndexResult>();
   private readonly chunker = new Chunker();
-  private readonly chunkCache = new Map<string, {
-    path: string;
-    chunks: IndexChunk[];
-    file: IndexFileMetadata;
-    content: string;
-    language?: string;
-  }>();
+  private readonly chunkCache = new Map<
+    string,
+    {
+      path: string;
+      chunks: IndexChunk[];
+      file: IndexFileMetadata;
+      content: string;
+      language?: string;
+      secrets: SecretFinding[];
+    }
+  >();
 
   async indexRepository(spec: IndexResult['spec'], options: IndexOptions = {}): Promise<IndexResult> {
     const repositoryHandle = await openRepository(spec);
@@ -240,10 +244,6 @@ export class IndexManager {
         const fileHash = createHash('sha256').update(sanitized.sanitized).digest('hex');
         const language = detectLanguageFromPath(file.path);
 
-        if (secretScanner) {
-          secretFindings.push(...secretScanner.scan(sanitized.sanitized, file.path));
-        }
-
         const cached = this.chunkCache.get(fileHash);
         if (cached && cached.path === file.path) {
           const clonedChunks = cached.chunks.map((chunk) => cloneChunk(chunk));
@@ -254,9 +254,11 @@ export class IndexManager {
             hash: fileHash,
             language,
             executable: file.executable,
+            detectionReason: detection.reason,
           });
           fileLanguageByHash.set(fileHash, language);
           fileContents.set(file.path, cached.content);
+          secretFindings.push(...cached.secrets);
           continue;
         }
 
@@ -267,6 +269,9 @@ export class IndexManager {
         };
 
         fileContents.set(file.path, sanitized.sanitized);
+
+        const secretsForFile = secretScanner ? secretScanner.scan(sanitized.sanitized, file.path) : [];
+        secretFindings.push(...secretsForFile);
 
         const generatedChunks = this.chunker.generate(chunkInput, chunkingOptions).map((chunk) =>
           chunkToIndexChunk(chunk, fileHash),
@@ -288,6 +293,7 @@ export class IndexManager {
           hash: fileHash,
           language,
           executable: file.executable,
+          detectionReason: detection.reason,
         };
         files.push(metadata);
         fileLanguageByHash.set(fileHash, language);
@@ -298,6 +304,7 @@ export class IndexManager {
           file: metadata,
           content: sanitized.sanitized,
           language,
+          secrets: secretsForFile.map((finding) => ({ ...finding })),
         });
       }
 

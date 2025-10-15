@@ -1,0 +1,6 @@
+data
+dist
+node_modules
+tmp-tests
+package-lock.json
+AGENDS.md

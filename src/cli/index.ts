@@ -284,7 +284,7 @@ export async function runCli(argv = process.argv) {
     .action(() => {
       const script = `#!/bin/bash
 _repo_tokenizer_mcp_completions() {
-  COMPREPLY=( $(compgen -W "init index export serve completion" -- "${COMP_WORDS[COMP_CWORD]}") )
+  COMPREPLY=( $(compgen -W "init index export serve completion" -- "\${COMP_WORDS[COMP_CWORD]}") )
 }
 complete -F _repo_tokenizer_mcp_completions repo-tokenizer-mcp
 `;
