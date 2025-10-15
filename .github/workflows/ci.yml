@@ -23,11 +23,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Set up npm
-        uses: npm/action-setup@v3
-        with:
-          version: 8
-          run_install: true
+      - name: Install dependencies
+        run: npm ci
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -35,13 +32,13 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
 
       - name: Lint
-        run: npm lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm test
 
       - name: Integration tests
-        run: npm test:integration
+        run: npm run test:integration
 
   security:
     runs-on: ubuntu-latest
@@ -59,8 +56,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: |
-          npm install --frozen-lockfile
+          npm ci --ignore-scripts
           npm audit --prod
 
       - name: Cargo audit
-        run: cargo audit
+        run: |
+          cargo install cargo-audit --force
+          cargo audit
