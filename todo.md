@@ -15,19 +15,19 @@
 - [x] Wprowadzić pinowanie źródła do commita/merge-base i deterministyczne snapshoty (hash + metadane).
 
 ## Faza 2 – Tokenizacja i chunking
-- [ ] Zaprojektować plugin interface dla tokenizerów i zaimplementować adaptery (np. tiktoken, sentencepiece).
-- [ ] Dostarczyć podstawowe tryby chunkingu: stały rozmiar (linie, tokeny), sliding window, „by file section”.
-- [ ] Wprowadzić adaptacyjny chunking (łączenie małych plików, dzielenie dużych) oraz konfigurowalne overlapy.
-- [ ] Zaimplementować budżet kontekstu z automatycznym doborem rozmiaru chunków względem limitu tokenów.
-- [ ] Wygenerować stabilne identyfikatory chunków (content hash + ścieżka) i deterministyczne sortowanie wyników.
-- [ ] Przygotować zestaw testów porównawczych chunkingu (różne języki, małe/duże pliki).
+- [x] Zaprojektować plugin interface dla tokenizerów i zaimplementować adaptery (np. tiktoken, sentencepiece).
+- [x] Dostarczyć podstawowe tryby chunkingu: stały rozmiar (linie, tokeny), sliding window, „by file section”.
+- [x] Wprowadzić adaptacyjny chunking (łączenie małych plików, dzielenie dużych) oraz konfigurowalne overlapy.
+- [x] Zaimplementować budżet kontekstu z automatycznym doborem rozmiaru chunków względem limitu tokenów.
+- [x] Wygenerować stabilne identyfikatory chunków (content hash + ścieżka) i deterministyczne sortowanie wyników.
+- [x] Przygotować zestaw testów porównawczych chunkingu (różne języki, małe/duże pliki).
 
 ## Faza 3 – Normalizacja i filtracja treści
-- [ ] Wykrywać i pomijać pliki binarne/duże według rozmiaru, rozszerzeń i heurystyk MIME.
-- [ ] Auto-wykrywać pliki generowane (`dist`, `build`, `.min.js`, `vendor`) oraz noise (licencje, boilerplate).
-- [ ] Normalizować końcówki linii, usuwać BOM i nadmiarowe spacje według konfiguracji.
-- [ ] Zaimplementować deduplikację treści (hash) oraz sanitizację wg reguł (sekrety, zakazane tokeny, komentarze generowane).
-- [ ] Udokumentować mechanizmy filtracji i zapewnić możliwość testowania wzorców (np. tryb dry-run).
+- [x] Wykrywać i pomijać pliki binarne/duże według rozmiaru, rozszerzeń i heurystyk MIME.
+- [x] Auto-wykrywać pliki generowane (`dist`, `build`, `.min.js`, `vendor`) oraz noise (licencje, boilerplate).
+- [x] Normalizować końcówki linii, usuwać BOM i nadmiarowe spacje według konfiguracji.
+- [x] Zaimplementować deduplikację treści (hash) oraz sanitizację wg reguł (sekrety, zakazane tokeny, komentarze generowane).
+- [x] Udokumentować mechanizmy filtracji i zapewnić możliwość testowania wzorców (np. tryb dry-run).
 
 ## Faza 4 – API, eksport i CLI
 - [ ] Zaimplementować MCP server z narzędziami `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
