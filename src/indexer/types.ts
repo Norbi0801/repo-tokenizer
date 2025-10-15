@@ -39,6 +39,9 @@ export interface IndexOptions {
   baseRef?: string;
   scanSecrets?: boolean;
   secretPatterns?: SecretPattern[];
+  gitSubmodules?: boolean;
+  gitLfs?: boolean;
+  gitWorktree?: boolean;
 }
 
 export interface SearchResult {

@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -34,15 +35,24 @@ export async function runCommand(
     });
 
     return {
-      stdout: typeof result.stdout === 'string' ? result.stdout : result.stdout.toString('utf8'),
-      stderr: typeof result.stderr === 'string' ? result.stderr : result.stderr.toString('utf8'),
+      stdout: result.stdout,
+      stderr: result.stderr,
     };
   } catch (error) {
     if (error instanceof Error) {
       const errorStdout = (error as { stdout?: Buffer | string }).stdout;
       const errorStderr = (error as { stderr?: Buffer | string }).stderr;
-      const stdout = typeof errorStdout === 'string' ? errorStdout : errorStdout?.toString('utf8') ?? '';
-      const stderr = typeof errorStderr === 'string' ? errorStderr : errorStderr?.toString('utf8') ?? '';
+      const toUtf8 = (value?: Buffer | string): string => {
+        if (typeof value === 'string') {
+          return value;
+        }
+        if (value && Buffer.isBuffer(value)) {
+          return value.toString('utf8');
+        }
+        return '';
+      };
+      const stdout = toUtf8(errorStdout);
+      const stderr = toUtf8(errorStderr);
       const cmdString = [file, ...args].join(' ');
       throw new Error(
         `Command failed (${cmdString}): ${error.message}\nstdout: ${stdout}\nstderr: ${stderr}`,

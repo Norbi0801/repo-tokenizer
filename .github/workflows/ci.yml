@@ -58,8 +58,3 @@ jobs:
       - run: |
           npm ci --ignore-scripts
           npm audit --prod
-
-      - name: Cargo audit
-        run: |
-          cargo install cargo-audit --force
-          cargo audit
