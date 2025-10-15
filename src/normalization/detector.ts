@@ -49,10 +49,11 @@ const DEFAULT_LARGE_FILE_THRESHOLD = 1024 * 1024 * 2; // 2 MB
 export class FileDetector {
   constructor(private readonly options: ContentFilterOptions = {}) {}
 
-  async inspect(path: string): Promise<FileDetectionResult> {
+  async inspect(path: string, relativePath?: string): Promise<FileDetectionResult> {
     const stats = await stat(path);
     const ext = extname(path).toLowerCase();
-    const fileName = basename(path);
+    const targetPath = relativePath ?? path;
+    const fileName = basename(targetPath);
     const binaryExtensions = new Set([
       ...DEFAULT_BINARY_EXTENSIONS,
       ...(this.options.binaryExtensions ?? []),
@@ -66,7 +67,7 @@ export class FileDetector {
 
     const isBinary = binaryExtensions.has(ext) || (this.options.binaryMimeSniff ? await this.detectBinaryByContent(path) : false);
     const isLarge = stats.size >= (this.options.largeFileThresholdBytes ?? DEFAULT_LARGE_FILE_THRESHOLD);
-    const isGenerated = this.isGeneratedFile(path, fileName, generatedDirectories, generatedPatterns);
+    const isGenerated = this.isGeneratedFile(targetPath, fileName, generatedDirectories, generatedPatterns);
 
     return {
       path,
@@ -79,16 +80,16 @@ export class FileDetector {
   }
 
   private isGeneratedFile(
-    path: string,
+    targetPath: string,
     fileName: string,
     directories: Set<string>,
     patterns: RegExp[],
   ): boolean {
-    if (patterns.some((pattern) => pattern.test(path) || pattern.test(fileName))) {
+    if (patterns.some((pattern) => pattern.test(targetPath) || pattern.test(fileName))) {
       return true;
     }
-    return path
-      .split(/[\\/]/)
+    return targetPath
+      .split(/[\/]/)
       .some((segment) => directories.has(segment.toLowerCase()));
   }
 

@@ -3,9 +3,9 @@
 <!-- Krótkie streszczenie wprowadzonych modyfikacji -->
 
 ## Testy
-- [ ] `pnpm lint`
-- [ ] `pnpm test`
-- [ ] `pnpm test:integration`
+- [ ] `npm lint`
+- [ ] `npm test`
+- [ ] `npm test:integration`
 - [ ] Inne (opis)
 
 ## Lista kontrolna

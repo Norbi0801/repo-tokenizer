@@ -90,7 +90,7 @@ repo-tokenizer/
 W kolejnych fazach dodamy pliki `package.json`, konfiguracje TypeScript, pipeline CI itp. (po ukończeniu Fazy 0).
 
 ## Automatyzacja (CI, bezpieczeństwo, szablony)
-- **CI GitHub Actions** (`.github/workflows/ci.yml`): lint (`pnpm lint`), testy jednostkowe i integracyjne, job bezpieczeństwa (gitleaks, `pnpm audit`, `cargo audit`).
+- **CI GitHub Actions** (`.github/workflows/ci.yml`): lint (`npm lint`), testy jednostkowe i integracyjne, job bezpieczeństwa (gitleaks, `npm audit`, `cargo audit`).
 - **Polityki bezpieczeństwa** (`config/policies/gitleaks.toml`): centralne wzorce blokujące wycieki, możliwość rozszerzania o baseline.
 - **Szablony PR/issue**: `pull_request_template.md` z checklistą, `ISSUE_TEMPLATE/bug_report.md` i `feature_request.md`.
 - **Przygotowanie pod dalszą automatyzację**: katalog `scripts/` na narzędzia developerskie, `config/` na konfiguracje lint/tokenizacji; plan dodania pre-commit w Fazie 5.

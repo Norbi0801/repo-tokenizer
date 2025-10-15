@@ -3,7 +3,7 @@
 ## Obsługa repozytoriów
 - Git (lokalne i zdalne) z pełnym wsparciem dla gałęzi, commitów i tagów oraz pracy na snapshotach read-only.
 - Respektowanie `.gitignore`, wsparcie dla własnych wzorców wykluczeń (glob/regex) i obsługa lokalnych wyjątków (`.git/info/exclude`).
-- Monorepo: ograniczanie po ścieżkach i pakietach, automatyczne wykrywanie korzeni workspace (pnpm/yarn/go workspaces itp.).
+- Monorepo: ograniczanie po ścieżkach i pakietach, automatyczne wykrywanie korzeni workspace (npm/yarn/go workspaces itp.).
 - Możliwość pracy na zarchiwizowanych repozytoriach (`.tar`, `.zip`) oraz katalogach bez systemu kontroli wersji (fallback read-only).
 - Tryb sparse checkout/sparse index zmniejszający IO na bardzo dużych repozytoriach.
 - Pinowanie do konkretnego commita/merge-base i deterministyczne snapshoty.

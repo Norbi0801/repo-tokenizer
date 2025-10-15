@@ -13,8 +13,8 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-async function detectPnpmWorkspace(root: string): Promise<WorkspaceInfo | undefined> {
-  const manifestPath = join(root, 'pnpm-workspace.yaml');
+async function detectnpmWorkspace(root: string): Promise<WorkspaceInfo | undefined> {
+  const manifestPath = join(root, 'npm-workspace.yaml');
   if (!(await fileExists(manifestPath))) {
     return undefined;
   }
@@ -41,7 +41,7 @@ async function detectPnpmWorkspace(root: string): Promise<WorkspaceInfo | undefi
   }
 
   return {
-    type: 'pnpm',
+    type: 'npm',
     manifest: manifestPath,
     root,
     packages: packagePatterns.length > 0 ? packagePatterns : undefined,
@@ -193,7 +193,7 @@ async function detectRushWorkspace(root: string): Promise<WorkspaceInfo | undefi
 
 export async function detectWorkspaces(root: string): Promise<WorkspaceInfo[]> {
   const detectors = [
-    detectPnpmWorkspace,
+    detectnpmWorkspace,
     detectPackageJsonWorkspace,
     detectGoWorkspace,
     detectCargoWorkspace,

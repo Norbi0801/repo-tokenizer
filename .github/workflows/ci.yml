@@ -21,10 +21,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          cache: npm
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
+      - name: Set up npm
+        uses: npm/action-setup@v3
         with:
           version: 8
           run_install: true
@@ -35,13 +35,13 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
 
       - name: Lint
-        run: pnpm lint
+        run: npm lint
 
       - name: Unit tests
-        run: pnpm test
+        run: npm test
 
       - name: Integration tests
-        run: pnpm test:integration
+        run: npm test:integration
 
   security:
     runs-on: ubuntu-latest
@@ -59,8 +59,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: |
-          pnpm install --frozen-lockfile
-          pnpm audit --prod
+          npm install --frozen-lockfile
+          npm audit --prod
 
       - name: Cargo audit
         run: cargo audit

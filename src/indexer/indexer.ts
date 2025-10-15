@@ -227,7 +227,7 @@ export class IndexManager {
           continue;
         }
         const absolutePath = join(basePath, file.path);
-        const detection = await fileDetector.inspect(absolutePath);
+        const detection = await fileDetector.inspect(absolutePath, file.path);
         if (detection.isBinary || detection.isGenerated || detection.isLarge) {
           continue;
         }

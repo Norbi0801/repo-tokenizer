@@ -9,7 +9,7 @@
 ## Faza 1 – Obsługa repozytoriów
 - [x] Zaimplementować moduł odczytu repozytoriów Git (lokalnych i zdalnych) z obsługą gałęzi/commitów/tagów.
 - [x] Zapewnić respektowanie `.gitignore`, `global .gitignore` i `.git/info/exclude` + możliwość dodatkowych wzorców glob/regex.
-- [x] Dodać wykrywanie monorepo i ograniczanie po workspace (pnpm/yarn/go) oraz ścieżkach/pakietach.
+- [x] Dodać wykrywanie monorepo i ograniczanie po workspace (npm/yarn/go) oraz ścieżkach/pakietach.
 - [x] Dodać wsparcie dla snapshotów read-only oraz pracy na archiwach (`.tar`, `.zip`) i katalogach bez Git.
 - [x] Zaimplementować tryb sparse checkout/sparse index dla bardzo dużych repozytoriów.
 - [x] Wprowadzić pinowanie źródła do commita/merge-base i deterministyczne snapshoty (hash + metadane).

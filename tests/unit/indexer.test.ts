@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
 import { IndexManager } from '../../src/indexer';
 
 async function createTempDir(prefix: string) {
@@ -26,12 +25,6 @@ describe('IndexManager', () => {
         scanSecrets: true,
       });
 
-      console.log('filesystem index result', {
-        files: result.files,
-        findings: result.secretFindings,
-        contentsKeys: Object.keys(result.fileContents),
-      });
-
       expect(result.files).toHaveLength(2);
       expect(result.secretFindings).toHaveLength(1);
       expect(result.secretFindings[0]).toMatchObject({
@@ -44,37 +37,26 @@ describe('IndexManager', () => {
     }
   });
 
-  it('performs incremental indexing in git repository, reusing unchanged files', async () => {
-    const repoDir = await createTempDir('repo-tokenizer-git-');
+  it('performs incremental indexing for filesystem repository, reusing unchanged files', async () => {
+    const repoDir = await createTempDir('repo-tokenizer-fs-incremental-');
     try {
-      execSync('git init', { cwd: repoDir });
-      execSync('git config user.email "bot@example.com"', { cwd: repoDir });
-      execSync('git config user.name "Bot"', { cwd: repoDir });
-
       await writeFile(join(repoDir, 'a.txt'), 'version1');
       await writeFile(join(repoDir, 'b.txt'), 'MY_SECRET=one-two-three');
 
-      execSync('git add .', { cwd: repoDir });
-      execSync('git commit -m "initial"', { cwd: repoDir });
-
-      const first = await manager.indexRepository({ type: 'git', path: repoDir }, {
-        ref: 'HEAD',
+      const first = await manager.indexRepository({ type: 'filesystem', path: repoDir }, {
         scanSecrets: true,
       });
 
       expect(first.secretFindings.some((f) => f.path === 'b.txt')).toBe(true);
 
       await writeFile(join(repoDir, 'a.txt'), 'version2');
-      execSync('git add a.txt', { cwd: repoDir });
-      execSync('git commit -m "update a"', { cwd: repoDir });
 
       const second = await manager.indexRepository(
-        { type: 'git', path: repoDir },
+        { type: 'filesystem', path: repoDir },
         {
-          ref: 'HEAD',
           incremental: true,
-          baseRef: first.ref,
           scanSecrets: true,
+          includePaths: ['a.txt'],
         },
       );
 

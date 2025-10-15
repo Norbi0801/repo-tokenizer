@@ -3,12 +3,12 @@
 Aby przetestować reguły filtracji/normalizacji na konkretnym pliku bez modyfikowania repozytorium, skorzystaj ze skryptu `scripts/dry-run-filter.ts`.
 
 ## Wymagania wstępne
-- `pnpm install`
+- `npm install`
 - Środowisko Node.js 20+
 
 ## Uruchomienie
 ```bash
-pnpm ts-node scripts/dry-run-filter.ts <ścieżka-do-pliku>
+npm ts-node scripts/dry-run-filter.ts <ścieżka-do-pliku>
 ```
 
 Skrypt wypisze:

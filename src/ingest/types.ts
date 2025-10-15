@@ -37,7 +37,7 @@ export interface FileEntry {
 }
 
 export interface WorkspaceInfo {
-  type: 'pnpm' | 'yarn' | 'npm' | 'go' | 'cargo' | 'bazel' | 'lerna' | 'rush' | 'other';
+  type: 'npm' | 'yarn' | 'npm' | 'go' | 'cargo' | 'bazel' | 'lerna' | 'rush' | 'other';
   manifest: string;
   root: string;
   packages?: string[];
