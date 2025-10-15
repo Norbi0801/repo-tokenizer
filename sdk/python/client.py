@@ -36,6 +36,13 @@ class RepoTokenizerClient:
         query = f"?{parse.urlencode(params)}" if params else ""
         return self._request(f"/chunks{query}")
 
+    def get_file(self, path: str, ref: Optional[str] = None) -> Any:
+        params = {"path": path}
+        if ref:
+            params["ref"] = ref
+        query = f"?{parse.urlencode(params)}"
+        return self._request(f"/file{query}")
+
     def get_chunk(self, chunk_id: str, ref: Optional[str] = None) -> Any:
         query = f"?ref={parse.quote(ref)}" if ref else ""
         return self._request(f"/chunks/{parse.quote(chunk_id)}{query}")
@@ -48,3 +55,12 @@ class RepoTokenizerClient:
             params["ref"] = ref
         query = f"?{parse.urlencode(params)}"
         return self._request(f"/search{query}")
+
+    def search_symbols(self, query_text: Optional[str] = None, ref: Optional[str] = None) -> Any:
+        params = {}
+        if query_text:
+            params["q"] = query_text
+        if ref:
+            params["ref"] = ref
+        query = f"?{parse.urlencode(params)}" if params else ""
+        return self._request(f"/search/symbols{query}")

@@ -11,6 +11,9 @@ import {
   ContentDeduplicator,
   SanitizationRule,
   FileDetector,
+  SecretScanner,
+  mergeSecretPatterns,
+  SecretFinding,
 } from '../normalization';
 import { detectLanguageFromPath } from './language';
 import {
@@ -59,6 +62,13 @@ function chunkToIndexChunk(chunk: Chunk, fileHash: string): IndexChunk {
   };
 }
 
+function cloneChunk(chunk: IndexChunk): IndexChunk {
+  return {
+    ...chunk,
+    metadata: { ...chunk.metadata },
+  };
+}
+
 export class IndexManager {
   private readonly indexes = new Map<string, IndexResult>();
   private readonly chunker = new Chunker();
@@ -92,6 +102,42 @@ export class IndexManager {
       }
 
       const repositoryImpl = repositoryHandle.repository as FilesystemRepository | GitRepository;
+
+      const incremental = Boolean(options.incremental);
+      let baseIndex: IndexResult | undefined;
+      let baseCommit: string | undefined;
+      let changedPathsSet: Set<string> | undefined;
+      let deletedPathsSet: Set<string> | undefined;
+
+      if (incremental) {
+        if (repositoryHandle.type === 'git') {
+          const repo = repositoryHandle.repository as GitRepository;
+          if (options.baseRef) {
+            baseCommit = await repo.resolveRef(options.baseRef).catch(() => undefined);
+          }
+          if (!baseCommit) {
+            const previous = this.findLatestIndex(spec);
+            if (previous?.ref) {
+              baseCommit = previous.ref;
+              baseIndex = previous;
+            }
+          }
+          if (!baseIndex && baseCommit) {
+            baseIndex = this.getIndex(spec, baseCommit);
+          }
+          if (!baseIndex) {
+            baseIndex = this.findLatestIndex(spec);
+            baseCommit = baseIndex?.ref;
+          }
+          if (baseIndex && baseCommit && ref) {
+            const diff = await repo.listChangedFiles(baseCommit, ref);
+            changedPathsSet = new Set(diff.changed);
+            deletedPathsSet = new Set(diff.deleted);
+          }
+        } else {
+          baseIndex = this.findLatestIndex(spec);
+        }
+      }
 
       const filesMeta = await repositoryImpl.listFiles({
         ref: options.ref,
@@ -128,8 +174,54 @@ export class IndexManager {
       const chunks: IndexChunk[] = [];
       const fileLanguageByHash = new Map<string, string | undefined>();
       const fileContents = new Map<string, string>();
+      const secretFindings: SecretFinding[] = [];
+      const scanSecrets = options.scanSecrets !== false;
+      const secretScanner = scanSecrets ? new SecretScanner(mergeSecretPatterns(options.secretPatterns)) : undefined;
+
+      if (baseIndex) {
+        const baseChunksByPath = new Map<string, IndexChunk[]>();
+        baseIndex.chunks.forEach((chunk) => {
+          const bucket = baseChunksByPath.get(chunk.metadata.path) ?? [];
+          bucket.push(cloneChunk(chunk));
+          baseChunksByPath.set(chunk.metadata.path, bucket);
+        });
+
+        for (const file of baseIndex.files) {
+          if (deletedPathsSet?.has(file.path)) {
+            continue;
+          }
+          if (changedPathsSet?.has(file.path)) {
+            continue;
+          }
+          files.push(file);
+          fileLanguageByHash.set(file.hash, baseIndex.fileLanguageByHash[file.hash]);
+          const existingContent = baseIndex.fileContents[file.path];
+          if (existingContent !== undefined) {
+            fileContents.set(file.path, existingContent);
+          }
+          const previousChunks = baseChunksByPath.get(file.path);
+          if (previousChunks) {
+            previousChunks.forEach((chunk) => chunks.push(cloneChunk(chunk)));
+          }
+        }
+
+        secretFindings.push(
+          ...baseIndex.secretFindings.filter((finding) => {
+            if (deletedPathsSet?.has(finding.path)) {
+              return false;
+            }
+            if (changedPathsSet?.has(finding.path)) {
+              return false;
+            }
+            return true;
+          }),
+        );
+      }
 
       for (const file of filesMeta) {
+        if (changedPathsSet && !changedPathsSet.has(file.path)) {
+          continue;
+        }
         const absolutePath = join(basePath, file.path);
         const detection = await fileDetector.inspect(absolutePath);
         if (detection.isBinary || detection.isGenerated || detection.isLarge) {
@@ -148,14 +240,25 @@ export class IndexManager {
         const fileHash = createHash('sha256').update(sanitized.sanitized).digest('hex');
         const language = detectLanguageFromPath(file.path);
 
-        files.push({
-          path: file.path,
-          size: detection.size,
-          hash: fileHash,
-          language,
-          executable: file.executable,
-        });
-        fileLanguageByHash.set(fileHash, language);
+        if (secretScanner) {
+          secretFindings.push(...secretScanner.scan(sanitized.sanitized, file.path));
+        }
+
+        const cached = this.chunkCache.get(fileHash);
+        if (cached && cached.path === file.path) {
+          const clonedChunks = cached.chunks.map((chunk) => cloneChunk(chunk));
+          chunks.push(...clonedChunks);
+          files.push({
+            path: file.path,
+            size: detection.size,
+            hash: fileHash,
+            language,
+            executable: file.executable,
+          });
+          fileLanguageByHash.set(fileHash, language);
+          fileContents.set(file.path, cached.content);
+          continue;
+        }
 
         const chunkInput = {
           text: sanitized.sanitized,
@@ -165,17 +268,37 @@ export class IndexManager {
 
         fileContents.set(file.path, sanitized.sanitized);
 
-        const fileChunks = this.chunker.generate(chunkInput, chunkingOptions).map((chunk) =>
+        const generatedChunks = this.chunker.generate(chunkInput, chunkingOptions).map((chunk) =>
           chunkToIndexChunk(chunk, fileHash),
         );
 
-        for (const chunk of fileChunks) {
+        const filteredChunks: IndexChunk[] = [];
+        for (const chunk of generatedChunks) {
           const dedup = deduplicator.isDuplicate(chunk.text, chunk.id);
           if (dedup.duplicate) {
             continue;
           }
+          filteredChunks.push(chunk);
           chunks.push(chunk);
         }
+
+        const metadata: IndexFileMetadata = {
+          path: file.path,
+          size: detection.size,
+          hash: fileHash,
+          language,
+          executable: file.executable,
+        };
+        files.push(metadata);
+        fileLanguageByHash.set(fileHash, language);
+
+        this.chunkCache.set(fileHash, {
+          path: file.path,
+          chunks: filteredChunks.map((chunk) => cloneChunk(chunk)),
+          file: metadata,
+          content: sanitized.sanitized,
+          language,
+        });
       }
 
       const result: IndexResult = {
@@ -186,6 +309,7 @@ export class IndexManager {
         createdAt: new Date().toISOString(),
         fileLanguageByHash: Object.fromEntries(fileLanguageByHash.entries()),
         fileContents: Object.fromEntries(fileContents.entries()),
+        secretFindings,
       };
 
       const key = makeIndexKey(spec, ref);
@@ -269,6 +393,7 @@ export class IndexManager {
     return {
       ...file,
       content: index.fileContents[path],
+      secrets: index.secretFindings.filter((finding) => finding.path === path),
     };
   }
 
@@ -336,5 +461,26 @@ export class IndexManager {
       });
     }
     return results.slice(0, 500);
+  }
+
+  private findLatestIndex(spec: IndexResult['spec']): IndexResult | undefined {
+    const entries = Array.from(this.indexes.values());
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      const candidate = entries[i];
+      if (candidate.spec.type !== spec.type) {
+        continue;
+      }
+      if (!candidate.spec.path || !spec.path) {
+        continue;
+      }
+      if (candidate.spec.path !== spec.path) {
+        continue;
+      }
+      if (spec.url && candidate.spec.url && spec.url !== candidate.spec.url) {
+        continue;
+      }
+      return candidate;
+    }
+    return undefined;
   }
 }

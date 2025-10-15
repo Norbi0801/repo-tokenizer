@@ -1,5 +1,6 @@
 import { RepositorySpec } from '../ingest';
 import { Chunk, ChunkingOptions } from '../chunker';
+import { SecretFinding, SecretPattern } from '../normalization';
 
 export interface IndexFileMetadata {
   path: string;
@@ -22,6 +23,7 @@ export interface IndexResult {
   createdAt: string;
   fileLanguageByHash: Record<string, string | undefined>;
   fileContents: Record<string, string>;
+  secretFindings: SecretFinding[];
 }
 
 export interface IndexOptions {
@@ -31,10 +33,12 @@ export interface IndexOptions {
   excludeRegexes?: RegExp[];
   workspaceRoots?: string[];
   sparsePatterns?: string[];
-  chunking?: ChunkingOptions;
+  chunking?: Partial<ChunkingOptions>;
   tokenizerId?: string;
   incremental?: boolean;
   baseRef?: string;
+  scanSecrets?: boolean;
+  secretPatterns?: SecretPattern[];
 }
 
 export interface SearchResult {

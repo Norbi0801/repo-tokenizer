@@ -23,6 +23,12 @@ export class RepoTokenizerClient {
     return this.request<{ chunks: unknown[] }>(`/chunks?${query.toString()}`);
   }
 
+  async getFile(path: string, params: { ref?: string } = {}) {
+    const query = new URLSearchParams({ path });
+    if (params.ref) query.set('ref', params.ref);
+    return this.request<{ file: unknown }>(`/file?${query.toString()}`);
+  }
+
   async getChunk(id: string, params: { ref?: string } = {}) {
     const query = params.ref ? `?ref=${encodeURIComponent(params.ref)}` : '';
     return this.request<{ chunk: unknown }>(`/chunks/${encodeURIComponent(id)}${query}`);
@@ -33,6 +39,14 @@ export class RepoTokenizerClient {
     if (params.pathGlob) qs.set('pathGlob', params.pathGlob);
     if (params.ref) qs.set('ref', params.ref);
     return this.request<{ matches: unknown[] }>(`/search?${qs.toString()}`);
+  }
+
+  async searchSymbols(query?: string, params: { ref?: string } = {}) {
+    const qs = new URLSearchParams();
+    if (query) qs.set('q', query);
+    if (params.ref) qs.set('ref', params.ref);
+    const suffix = qs.toString();
+    return this.request<{ matches: unknown[] }>(`/search/symbols${suffix ? `?${suffix}` : ''}`);
   }
 
   private async request<T>(path: string): Promise<T> {

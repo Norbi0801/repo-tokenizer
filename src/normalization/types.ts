@@ -43,3 +43,16 @@ export interface SanitizationRule {
 export interface SanitizationOptions {
   rules: SanitizationRule[];
 }
+
+export interface SecretPattern {
+  id: string;
+  description: string;
+  pattern: RegExp;
+}
+
+export interface SecretFinding {
+  path: string;
+  line: number;
+  ruleId: string;
+  excerpt: string;
+}

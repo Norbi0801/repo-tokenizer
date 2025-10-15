@@ -1,5 +1,6 @@
 import { RepositorySpec } from '../ingest';
 import { ChunkingOptions } from '../chunker';
+import { SecretPattern } from '../normalization';
 
 export interface IndexingConfig {
   ref?: string;
@@ -8,6 +9,8 @@ export interface IndexingConfig {
   includePaths?: string[];
   excludeGlobs?: string[];
   sparsePatterns?: string[];
+  scanSecrets?: boolean;
+  secretPatterns?: SecretPattern[];
 }
 
 export interface ExportConfig {
@@ -21,6 +24,7 @@ export interface ServerConfig {
   port?: number;
   webhookUrl?: string;
   queueName?: string;
+  airGap?: boolean;
 }
 
 export interface RepoTokenizerConfig {

@@ -5,6 +5,7 @@ import { FileDetector } from '../src/normalization/detector';
 import { ContentNormalizer } from '../src/normalization/normalize';
 import { ContentSanitizer } from '../src/normalization/sanitizer';
 import { ContentDeduplicator } from '../src/normalization/deduplicator';
+import { SecretScanner } from '../src/normalization/secretScanner';
 
 async function main() {
   const file = process.argv[2];
@@ -53,6 +54,12 @@ async function main() {
   });
   const sanitized = sanitizer.sanitize(normalized.normalized);
   console.log('Sanitization applied rules:', sanitized.appliedRules);
+
+  const scanner = new SecretScanner();
+  const secretFindings = scanner.scan(sanitized.sanitized, path);
+  if (secretFindings.length > 0) {
+    console.log('Potential secrets:', secretFindings);
+  }
 
   const deduplicator = new ContentDeduplicator();
   const dedupResult = deduplicator.isDuplicate(sanitized.sanitized, path);

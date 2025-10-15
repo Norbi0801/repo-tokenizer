@@ -60,6 +60,10 @@ paths:
       responses:
         '200':
           description: File payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
   /chunks:
     get:
       summary: List indexed chunks
@@ -138,6 +142,10 @@ paths:
       responses:
         '200':
           description: Symbol matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymbolSearchResponse'
   /export/jsonl:
     get:
       summary: Export current index as JSONL
@@ -160,3 +168,54 @@ paths:
               schema:
                 type: string
                 format: binary
+components:
+  schemas:
+    SecretFinding:
+      type: object
+      properties:
+        path:
+          type: string
+        line:
+          type: integer
+        ruleId:
+          type: string
+        excerpt:
+          type: string
+    FileResponse:
+      type: object
+      properties:
+        file:
+          type: object
+          properties:
+            path:
+              type: string
+            size:
+              type: integer
+            hash:
+              type: string
+            language:
+              type: string
+            executable:
+              type: boolean
+            content:
+              type: string
+            secrets:
+              type: array
+              items:
+                $ref: '#/components/schemas/SecretFinding'
+    SymbolSearchResponse:
+      type: object
+      properties:
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              path:
+                type: string
+              line:
+                type: integer
+              context:
+                type: string

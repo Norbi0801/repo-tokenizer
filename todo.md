@@ -38,11 +38,11 @@
 - [x] Udokumentować API, CLI i przykładowe przepływy integracyjne.
 
 ## Faza 5 – Inkrementalne aktualizacje i bezpieczeństwo
-- [ ] Zaimplementować analizę diff (git diff vs ostatni snapshot) oraz cache tokenizacji po hashach treści.
-- [ ] Dodać tryb watch (fsnotify/inotify) i harmonogramy reindeksacji (cron/CI).
-- [ ] Wprowadzić maskowanie sekretów, integracje z zewnętrznymi skanerami i redakcję logów/eksportów.
-- [ ] Zapewnić szyfrowanie eksportów (AES/GPG) oraz podpisy hash (SHA-256) do weryfikacji integralności.
-- [ ] Zweryfikować zgodność z wymaganiami air-gap (brak telemetrii, brak zależności sieciowych w trybie offline).
+- [x] Zaimplementować analizę diff (git diff vs ostatni snapshot) oraz cache tokenizacji po hashach treści.
+- [x] Dodać tryb watch (fsnotify/inotify) i harmonogramy reindeksacji (cron/CI).
+- [x] Wprowadzić maskowanie sekretów, integracje z zewnętrznymi skanerami i redakcję logów/eksportów.
+- [x] Zapewnić szyfrowanie eksportów (AES/GPG) oraz podpisy hash (SHA-256) do weryfikacji integralności.
+- [x] Zweryfikować zgodność z wymaganiami air-gap (brak telemetrii, brak zależności sieciowych w trybie offline).
 
 ## Faza 6 – Integracje, wydajność i obserwowalność
 - [ ] Obsłużyć Git submodules, Git LFS oraz worktrees w pipeline'ie ingestu.

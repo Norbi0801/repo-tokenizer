@@ -30,6 +30,15 @@ function createSchema(db: Database) {
 
   db.run('CREATE INDEX idx_chunks_path ON chunks(path);');
   db.run('CREATE INDEX idx_chunks_file_hash ON chunks(file_hash);');
+
+  db.run(`
+    CREATE TABLE secret_findings (
+      path TEXT,
+      line INTEGER,
+      rule_id TEXT,
+      excerpt TEXT
+    );
+  `);
 }
 
 export async function buildSqliteBuffer(result: IndexResult): Promise<Buffer> {
@@ -43,6 +52,9 @@ export async function buildSqliteBuffer(result: IndexResult): Promise<Buffer> {
     );
     const insertChunk = db.prepare(
       'INSERT INTO chunks(id, path, start_line, end_line, token_count, char_count, chunk_index, total_chunks, text, file_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    );
+    const insertSecret = db.prepare(
+      'INSERT INTO secret_findings(path, line, rule_id, excerpt) VALUES (?, ?, ?, ?)',
     );
 
     for (const file of result.files) {
@@ -71,6 +83,16 @@ export async function buildSqliteBuffer(result: IndexResult): Promise<Buffer> {
       ]);
     }
     insertChunk.free();
+
+    for (const finding of result.secretFindings) {
+      insertSecret.run([
+        finding.path,
+        finding.line,
+        finding.ruleId,
+        finding.excerpt,
+      ]);
+    }
+    insertSecret.free();
 
     const binary = db.export();
     return Buffer.from(binary);

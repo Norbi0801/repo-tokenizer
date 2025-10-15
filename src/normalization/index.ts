@@ -3,3 +3,4 @@ export * from './detector';
 export * from './normalize';
 export * from './sanitizer';
 export * from './deduplicator';
+export * from './secretScanner';

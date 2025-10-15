@@ -16,20 +16,22 @@ interface ServerOptions {
 export function createServer(indexManager: IndexManager, options: ServerOptions): FastifyInstance {
   const app = Fastify({ logger: true });
   const { spec, indexOptions } = options;
-  const notifier = new IndexNotifier(options.notifier);
+  const notifier = options.notifier ? new IndexNotifier(options.notifier) : undefined;
 
   app.get('/health', async () => ({ status: 'ok' }));
 
   app.post('/index', async (request, reply) => {
     const body = request.body as { ref?: string } | undefined;
     const result = await indexManager.indexRepository(spec, { ...indexOptions, ref: body?.ref ?? indexOptions?.ref });
-    await notifier.notify({
-      specPath: spec.path,
-      ref: result.ref,
-      files: result.files.length,
-      chunks: result.chunks.length,
-      createdAt: result.createdAt,
-    });
+    if (notifier) {
+      await notifier.notify({
+        specPath: spec.path,
+        ref: result.ref,
+        files: result.files.length,
+        chunks: result.chunks.length,
+        createdAt: result.createdAt,
+      });
+    }
     reply.status(202);
     return {
       message: 'indexing complete',

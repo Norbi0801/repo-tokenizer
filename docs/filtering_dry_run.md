@@ -15,6 +15,7 @@ Skrypt wypisze:
 - wynik `FileDetector` (czy plik jest binarny/duży/wygenerowany),
 - statystyki normalizacji (czy usunięto BOM, znormalizowano EOL, przycięto trailing whitespace),
 - listę zastosowanych reguł sanitizacji,
+- potencjalne trafienia skanera sekretów,
 - wynik deduplikacji (hash, informacja o duplikacie).
 
 Dzięki temu można iteracyjnie dostrajać wzorce `.gitignore`, reguły sanitizacji czy progi wielkości plików bez uruchamiania pełnego pipeline'u.
