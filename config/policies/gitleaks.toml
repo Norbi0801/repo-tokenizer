@@ -1,0 +1,17 @@
+# Minimalna konfiguracja gitleaks – rozszerzana w kolejnych fazach
+
+[extend]
+paths = ["config/policies/gitleaks_baseline.toml"]
+
+[allowlist]
+description = "Dozwolone wzorce (np. klucze testowe)"
+regexes = [
+  "FAKE_[A-Z0-9_]{16,}",
+  "TEST_TOKEN_[A-Z0-9]{8,}"
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Wykrywanie kluczy API"
+regex = '''(?i)(api|secret|token|key)[=:]["']?[0-9a-z\-]{16,}["']?'''
+tags = ["key", "api", "generic"]
