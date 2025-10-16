@@ -1,21 +1,21 @@
-# Dry-run filtracji i normalizacji
+# Filtering and normalisation dry run
 
-Aby przetestować reguły filtracji/normalizacji na konkretnym pliku bez modyfikowania repozytorium, skorzystaj ze skryptu `scripts/dry-run-filter.ts`.
+To validate filtering or normalisation rules for a specific file without mutating the repository, use the `scripts/dry-run-filter.ts` helper.
 
-## Wymagania wstępne
+## Prerequisites
 - `npm install`
-- Środowisko Node.js 20+
+- Node.js 20 or newer
 
-## Uruchomienie
+## Running
 ```bash
-npm ts-node scripts/dry-run-filter.ts <ścieżka-do-pliku>
+npm ts-node scripts/dry-run-filter.ts <path-to-file>
 ```
 
-Skrypt wypisze:
-- wynik `FileDetector` (czy plik jest binarny/duży/wygenerowany),
-- statystyki normalizacji (czy usunięto BOM, znormalizowano EOL, przycięto trailing whitespace),
-- listę zastosowanych reguł sanitizacji,
-- potencjalne trafienia skanera sekretów,
-- wynik deduplikacji (hash, informacja o duplikacie).
+The script prints:
+- the `FileDetector` result (binary, oversized, generated flags),
+- normalisation stats (BOM removal, EOL changes, trimmed trailing whitespace),
+- a list of sanitisation rules that matched,
+- potential secret scanner hits,
+- deduplication outcome (hash and duplicate flag).
 
-Dzięki temu można iteracyjnie dostrajać wzorce `.gitignore`, reguły sanitizacji czy progi wielkości plików bez uruchamiania pełnego pipeline'u.
+This makes it easy to tune `.gitignore` patterns, sanitisation rules, or file size thresholds without executing the full pipeline.

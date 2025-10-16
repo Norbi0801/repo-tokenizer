@@ -1,0 +1,48 @@
+{
+  "title": "Repo Tokenizer Overview",
+  "description": "Sample Datadog dashboard for Repo Tokenizer metrics",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Index Duration p95",
+        "requests": [
+          {
+            "q": "histogram_quantile(0.95, sum:repo_tokenizer_index_duration_seconds.bucket{repository_type:$repository} by {le} )",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Index Runs",
+        "requests": [
+          {
+            "q": "sum:repo_tokenizer_index_runs_total{repository_type:$repository} by {repository_type}",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Last secrets",
+        "requests": [
+          {
+            "q": "last:repo_tokenizer_last_index_secrets{repository_type:$repository}"
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "repository",
+      "prefix": "repository_type",
+      "default": "*"
+    }
+  ]
+}

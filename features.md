@@ -1,102 +1,102 @@
 # Features
 
-## Obsługa repozytoriów
-- Git (lokalne i zdalne) z pełnym wsparciem dla gałęzi, commitów i tagów oraz pracy na snapshotach read-only.
-- Respektowanie `.gitignore`, wsparcie dla własnych wzorców wykluczeń (glob/regex) i obsługa lokalnych wyjątków (`.git/info/exclude`).
-- Monorepo: ograniczanie po ścieżkach i pakietach, automatyczne wykrywanie korzeni workspace (npm/yarn/go workspaces itp.).
-- Możliwość pracy na zarchiwizowanych repozytoriach (`.tar`, `.zip`) oraz katalogach bez systemu kontroli wersji (fallback read-only).
-- Tryb sparse checkout/sparse index zmniejszający IO na bardzo dużych repozytoriach.
-- Pinowanie do konkretnego commita/merge-base i deterministyczne snapshoty.
+## Repository support
+- Git (local and remote) with full branch, commit, and tag awareness plus read only snapshot mode.
+- Respect for `.gitignore`, custom exclusion patterns (glob/regex), and local exceptions (`.git/info/exclude`).
+- Monorepo handling: path and package scoping, automatic workspace root detection (npm, yarn, go, etc.).
+- Ability to process archived repositories (`.tar`, `.zip`) and folders without version control (fallback read only mode).
+- Sparse checkout and sparse index modes to reduce IO for very large repositories.
+- Pinning to a specific commit or merge base with deterministic snapshots.
 
-## Tokenizacja i chunking
-- Parsery ogólne: dzielenie po liniach, blokach, nagłówkach i komentarzach.
-- Tryby chunkingu: stały rozmiar (tokens/znaki), sliding window oraz „by file section”.
-- Wsparcie wielu tokenizerów (np. tiktoken, sentencepiece) poprzez plugin interface.
-- Budżet kontekstu: auto-dobór chunk size pod zadany maksymalny limit tokenów.
-- Adaptacyjny chunking: łączenie małych plików i dzielenie dużych według heurystyk językowych.
-- Konfigurowalne overlapy, stabilne ID chunków (content hash + ścieżka) i możliwość wymuszenia deterministycznego sortowania.
+## Tokenisation and chunking
+- Generic parsers: split by lines, blocks, headers, and comments.
+- Chunking modes: fixed size (tokens or characters), sliding window, and by file section.
+- Support for multiple tokenizers (for example tiktoken, sentencepiece) through a plugin interface.
+- Context budget manager: automatic chunk size selection based on a target token limit.
+- Adaptive chunking: merge small files and split large files using language heuristics.
+- Configurable overlap, stable chunk identifiers (content hash plus path), and deterministic ordering.
 
-## Normalizacja i filtracja treści
-- Pomijanie plików binarnych i bardzo dużych (progi rozmiaru, rozszerzenia).
-- Auto-wykrywanie plików generowanych (`dist`, `build`, `.min.js`, `vendor`).
-- Deduplikacja treści (hash) oraz stabilne ID chunków dla referencji zwrotnych.
-- Normalizacja końcówek linii i usuwanie nadmiarowych spacji oraz BOM.
-- Filtrowanie komentarzy generowanych i wzorców noise (np. boilerplate licencyjny).
-- Konfigurowalne reguły sanitizacji (np. wycinanie fragmentów z zakazanymi tokenami).
+## Content normalisation and filtering
+- Skip binary and very large files (size thresholds and extension rules).
+- Auto detect generated assets (`dist`, `build`, `.min.js`, `vendor`).
+- Content deduplication (hash) and stable chunk identifiers for reverse lookups.
+- Normalise end of line characters and remove unnecessary trailing whitespace and BOM markers.
+- Filter generated comments and boilerplate noise (for example licence headers).
+- Configurable sanitisation rules (for example remove forbidden tokens).
 
-## Wyjścia i API (MCP)
-- MCP server z narzędziami: `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
-- Format eksportu: JSONL (chunks + metadane), opcjonalnie SQLite oraz Parquet.
-- Strumieniowanie wyników (chunking streaming) i wsparcie dla back-pressure.
-- SDK/klienci referencyjni dla Node.js/Pythona oraz specyfikacja OpenAPI do integracji HTTP.
-- Webhooki i kolejki (SQS/NATS) do asynchronicznej dostawy indeksów.
+## Outputs and MCP API
+- MCP server tools: `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
+- Export formats: JSONL (chunks plus metadata), optional SQLite and Parquet.
+- Streaming chunk delivery and built in back pressure controls.
+- SDK and reference clients for Node.js/Python and an OpenAPI spec for HTTP integrations.
+- Webhooks and queues (SQS/NATS) for asynchronous index delivery.
 
-## Inkrementalne aktualizacje
-- Przetwarzanie tylko zmian (diff względem poprzedniego snapshotu).
-- Cache tokenizacji na poziomie pliku/chunku (content hash).
-- Tryb watch reagujący na zmiany w filesystemie (fsnotify/inotify).
-- Harmonogramy reindeksacji (cron/CI) i odświeżanie przy merge do gałęzi głównej.
+## Incremental updates
+- Process only changes (diff against the previous snapshot).
+- Tokenisation cache per file/chunk content hash.
+- Watch mode that reacts to file system updates (fsnotify/inotify).
+- Reindexing schedules (cron/CI) and refresh on merge to the main branch.
 
-## Konfigurowalność i CLI
-- Komendy `repo-tokenizer-mcp init`, `index`, `serve`, `export`.
-- Plik konfiguracyjny (YAML/TOML): include/exclude, tokenizer, maksymalna liczba tokenów, strategie chunkingu.
-- Profile konfiguracyjne per środowisko (np. lokalne vs CI) i override flagami CLI.
-- Tryb `--dry-run`, logowanie verbose, wyjście w formacie tabelarycznym/JSON.
-- Autouzupełnianie powłoki (bash/zsh/fish) i generatory dokumentacji CLI.
+## Configurability and CLI
+- Commands: `repo-tokenizer-mcp init`, `index`, `serve`, `export`.
+- Configuration file (YAML/TOML): include/exclude, tokenizer selection, maximum token count, chunking strategies.
+- Config profiles per environment (for example local vs CI) with CLI overrides.
+- `--dry-run` mode, verbose logging, and table or JSON output formats.
+- Shell autocompletion (bash/zsh/fish) and CLI documentation generators.
 
-## Bezpieczeństwo i prywatność
-- Maskowanie sekretów (detektory `.env`, kluczy, tokenów).
-- Tryb air-gapped (bez sieci), brak telemetrii domyślnie.
-- Redakcja w logach i eksportach (hashowanie lub placeholdery dla wrażliwych fragmentów).
-- Integracja z zewnętrznymi skanerami sekretów (np. TruffleHog, GitGuardian) jako opcjonalny krok walidacyjny.
-- Szyfrowanie eksportów w locie (AES/GPG) oraz podpisy hash (SHA-256) dla weryfikacji integralności.
+## Security and privacy
+- Secret masking (detectors for `.env` files, keys, tokens).
+- Air gapped mode (no network), telemetry disabled by default.
+- Redaction in logs and exports (hashing or placeholders for sensitive fragments).
+- Integrations with external secret scanners (for example TruffleHog, GitGuardian) as an optional validation step.
+- In flight export encryption (AES/GPG) and checksum signatures (SHA-256) for integrity verification.
 
-## Integracje VCS i CI
+## VCS and CI integrations
 - Git submodules, Git LFS, worktrees.
-- Integracje z GitHub/GitLab: indeksowanie diffów PR, komentarze z podsumowaniem kontekstu, status checks.
-- Hooki: pre-commit (walidacja sekretów), job CI „index repo”.
-- Pull-based API dla platformy CI (REST/gRPC) i raportowanie metryk do pipeline'u.
+- GitHub/GitLab integrations: PR diff indexing, contextual summaries, status checks.
+- Hooks: pre-commit (secret validation), CI job "index repo".
+- Pull based API for CI platforms (REST/gRPC) and metric reporting to pipelines.
 
-## Optymalizacja i skalowanie
-- Równoległe przetwarzanie, ograniczenie RAM, back-pressure na IO.
-- Profile wydajności, benchmarki na dużych monorepo.
-- Pamięć podręczna między branchami (content-addressed store).
-- Sharding indeksu oraz możliwość działania w klastrze (worker pool, kolejki).
-- Mechanizmy autoretry i resume po przerwaniu procesu.
+## Optimisation and scale
+- Parallel processing, memory limits, IO back pressure.
+- Performance profiles, benchmarks on large monorepos.
+- Shared cache across branches (content addressed store).
+- Index sharding and cluster operation (worker pool, queues).
+- Auto retry mechanisms and resume support after interruptions.
 
-## Jakość i DX
-- Obszerne logowanie (levele), tryb suchego uruchomienia (dry-run).
-- Deterministyczne buildy indeksu, snapshoty z metadanymi (commit, timestamp).
-- Zestawy testowe/fixture’y dla popularnych ekosystemów (JS/TS, Python, Java, Go, Rust).
-- Generator sample datasetów do manualnej inspekcji chunków.
-- Porównywanie snapshotów (diff indeksów) oraz raporty regresji jakości chunków.
+## Quality and developer experience
+- Extensive logging (levels), dry run mode.
+- Deterministic index builds, snapshots with metadata (commit, timestamp).
+- Test suites and fixtures for common ecosystems (JS/TS, Python, Java, Go, Rust).
+- Sample dataset generator for manual chunk inspection.
+- Snapshot comparisons (index diffs) and chunk quality regression reports.
 
-## Interfejsy
+## Interfaces
 - MCP tools: `diff_chunks`, `blame`, `resolve_ref`, `context_pack`.
-- `context_pack(files|symbols, max_tokens)` – automatyczny dobór chunków pod budżet tokenów.
-- Prosty TUI/HTML raport (rozmiary, rozkład języków, najcięższe pliki).
-- Pluginy do VS Code/JetBrains z przeglądarką chunków i kontekstu rozmów z LLM.
-- Integracja z przeglądarką (web) dla self-service analizy repozytorium.
+- `context_pack(files|symbols, max_tokens)` - automatic chunk selection tailored to a token budget.
+- Lightweight TUI and HTML report (sizes, language breakdown, heaviest files).
+- Plugins for VS Code and JetBrains with chunk browsers and conversation context helpers.
+- Web integration for self service repository analysis.
 
-## Reguły domenowe
-- Licencyjna filtracja (pomijanie folderów z licencją niedozwoloną).
-- Anonimizacja PII w komentarzach/dokumentach (opcjonalna).
-- Reguły branżowe (SOX/GDPR) jako zestawy predefiniowanych filtrów do konfiguracji.
-- Raporty zgodności (logi decyzji filtrujących) do audytu.
+## Domain rules
+- Licence based filtering (exclude folders with a disallowed licence).
+- PII anonymisation in comments/documents (optional).
+- Industry rule packs (SOX/GDPR) as predefined configuration bundles.
+- Compliance reports (filter decision logs) for audit purposes.
 
-## Format danych
-- Eksport do Parquet/SQLite dla analityki.
-- Kompatybilność z popularnymi wektorówkami (FAISS, Qdrant, pgvector) – adaptery.
-- Snapshoty w formacie delta (tylko zmienione chunk/metadata).
-- Generowanie manifestów (JSON/YAML) dla pipeline'ów MLOps.
+## Data format
+- Export to Parquet/SQLite for analytics.
+- Compatibility adapters for common vector stores (FAISS, Qdrant, pgvector).
+- Delta snapshots (only changed chunks/metadata).
+- Manifest generation (JSON/YAML) for MLOps pipelines.
 
-## Obserwowalność i operacje
-- Metryki Prometheus/OTel (czas tokenizacji, throughput, cache hit-rate).
-- Dashboardy operacyjne (Grafana, Datadog) z alertami na degradacje jakości lub wydajności.
-- Health-checki HTTP/gRPC oraz endpointy readiness/liveness.
-- Profilery wbudowane (CPU/heap) i trace’owanie długotrwałych zadań.
+## Observability and operations
+- Prometheus/OTel metrics (tokenisation time, throughput, cache hit rate).
+- Operational dashboards (Grafana, Datadog) with alerts for quality or performance regressions.
+- HTTP/gRPC health checks plus readiness and liveness endpoints.
+- Built in profilers (CPU/heap) and tracing for long running tasks.
 
-## Szkic kontraktów MCP
+## MCP contract sketch
 - `list_files({ include?: string[], exclude?: string[] }) -> { files: { path, size, lang, hash }[] }`
 - `list_chunks({ path?: string, lang?: string, max_tokens?: number }) -> { chunks: { id, path, start_line, end_line, token_count, hash }[] }`
 - `get_chunk({ id }) -> { text, metadata }`
@@ -104,18 +104,18 @@
 - `context_pack({ targets: string[] | symbol[], max_tokens }) -> { chunks: Chunk[] }`
 - `diff_chunks({ base_ref, head_ref }) -> { added: Chunk[], removed: Chunk[], modified: { before: Chunk, after: Chunk }[] }`
 
-## Domyślne strategie chunkingu
-- „By lines”: N linii z overlapem M (proste, szybkie).
-- „By tokens”: N tokenów z overlapem M (stabilne względem modeli).
-- „By syntax”: sekcje typu funkcja/klasa/moduł (wymaga parsera/ctags/tree-sitter).
-- „Hybrid”: syntax, a gdy za duże – docięcie do budżetu tokenów.
-- „Semantic merge”: łączenie powiązanych chunków w locie dla zapytań kontekstowych.
+## Default chunking strategies
+- "By lines": N lines with overlap M (simple and fast).
+- "By tokens": N tokens with overlap M (stable for models).
+- "By syntax": section based (function/class/module) using language aware parsers.
+- "Hybrid": start with syntax and trim to the token budget when necessary.
+- "Semantic merge": combine related chunks on the fly for contextual queries.
 
-## Następne kroki (warto dodać)
-- Głębsza analiza kodu: chunking semantyczny po AST (Tree-sitter) i symbolach (ctags).
-- Indeks symboli (definicje, referencje), graf zależności pakietów.
-- Mapowanie test ⇄ plik źródłowy (heurystyki po nazwach/ścieżkach).
-- Generowanie embeddingów (konfigurowalne modele) i hybrydowe wyszukiwanie (BM25 + wektorowe + filtracja po metadanych).
-- Integracja z platformami review (komentarze kontekstowe, autorskaplugin) i powiadomienia o zmianach jakości indeksu.
-- Inteligentne profile chunkingu zależne od języka i stylu repo (uczenie ze statystyk historycznych).
-- System rekomendacji kontekstu (podsuwanie najistotniejszych plików/symboli pod zapytanie użytkownika).
+## Next steps worth adding
+- Deeper code analysis: semantic chunking driven by ASTs (Tree sitter) and symbols (ctags).
+- Symbol index (definitions, references), package dependency graph.
+- Test to source mapping (heuristics based on names/paths).
+- Embedding generation (configurable models) and hybrid search (BM25 plus vector plus metadata filters).
+- Review platform integration (contextual comments, author plugins) and quality change notifications.
+- Intelligent chunking profiles per language and repository style (learned from historical statistics).
+- Context recommendation system (suggest most relevant files or symbols for a user query).

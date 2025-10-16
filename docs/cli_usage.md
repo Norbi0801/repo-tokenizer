@@ -2,29 +2,29 @@
 
 `repo-tokenizer-mcp` exposes the following commands:
 
-- `init` – tworzy przykładowy plik konfiguracji (`.repo-tokenizer.yaml`).
-- `index --config <path>` – indeksuje repozytorium i wypisuje liczbę plików/chunków.
-- `export --config <path> [--format jsonl|sqlite] [--output <path>] [--encrypt <hasło>]` – eksportuje indeks do JSONL (domyślnie) lub SQLite; opcjonalnie szyfruje AES-256-GCM.
-- `serve --config <path> [--port <port>]` – uruchamia MCP server z REST API.
-- `completion` – wypisuje prosty skrypt autouzupełniania bash.
-- `index --watch` – utrzymuje indeksację na żywo, reagując na zmiany w repozytorium.
-- `index --interval <sekundy>` – uruchamia reindeksację cyklicznie.
-- `index --skip-secret-scan` – pomija wykrywanie sekretów (domyślnie aktywne).
-- `index --secrets-report <plik>` – zapisuje raport wykrytych sekretów w JSON.
+- `init` - creates a sample configuration file (`.repo-tokenizer.yaml`).
+- `index --config <path>` - indexes a repository and prints the number of files/chunks.
+- `export --config <path> [--format jsonl|sqlite] [--output <path>] [--encrypt <password>]` - exports the index to JSONL (default) or SQLite; optional AES-256-GCM encryption.
+- `serve --config <path> [--port <port>]` - starts the MCP server with a REST API.
+- `completion` - prints a basic bash completion script.
+- `index --watch` - keeps indexing up to date by reacting to repository changes.
+- `index --interval <seconds>` - triggers periodic re-indexing.
+- `index --skip-secret-scan` - skips secret detection (enabled by default).
+- `index --secrets-report <file>` - writes a JSON report of detected secrets.
 
-Konfiguracja obsługuje profile (`profiles:`) oraz sekcje `repository`, `indexing`, `export`, `server` (patrz `init`).
+Configuration supports profiles (`profiles:`) and the sections `repository`, `indexing`, `export`, and `server` (see `init`).
 
-### Strumieniowanie JSONL
-Polecenie `export` z `--output -` pisze JSONL na STDOUT. Serwer HTTP posiada endpoint `/chunks?stream=true` oraz `/export/jsonl` (NDJSON) do strumieniowej konsumpcji.
+## JSONL streaming
+Running `export` with `--output -` writes JSONL to STDOUT. The HTTP server exposes `/chunks?stream=true` as well as `/export/jsonl` (NDJSON) for streaming consumption.
 
-### Webhook / kolejka
-W sekcji `server` można wskazać `webhookUrl` i `queueName`. Po zakończeniu indeksacji serwer wyśle POST do webhooka oraz zaloguje payload jako stub kolejki (do podmiany na SQS/NATS).
+## Webhook and queue
+Inside the `server` section you can set `webhookUrl` and `queueName`. When indexing finishes the server sends a POST request to the webhook and logs the payload that can later be forwarded to SQS or NATS.
 
-### MCP endpoints
+## MCP endpoints
 - `GET /files`, `GET /file?path=...`
 - `GET /chunks`, `GET /chunks/:id`, `GET /chunks?stream=true`
-- `GET /search` (full-text) oraz `GET /search/symbols`
+- `GET /search` (full text) and `GET /search/symbols`
 - `GET /export/jsonl`, `GET /export/sqlite`
 
-### Tryb air-gap
-Ustawienie `server.airGap: true` wyłącza webhook/queue, dzięki czemu serwer nie wykonuje połączeń sieciowych.
+## Air gapped mode
+Setting `server.airGap: true` disables webhook and queue delivery so the server avoids outbound network calls.

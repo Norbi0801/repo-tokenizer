@@ -1,0 +1,75 @@
+{
+  "title": "Repo Tokenizer Overview",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Index Duration p95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(repo_tokenizer_index_duration_seconds_bucket{repository_type=\"$repository\"}[5m])) by (le))",
+          "legendFormat": "p95 duration"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Index Runs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(repo_tokenizer_index_runs_total{repository_type=\"$repository\"}[5m]))",
+          "legendFormat": "runs/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Last Secrets",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "repo_tokenizer_last_index_secrets{repository_type=\"$repository\"}",
+          "legendFormat": "secrets"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Last Chunks",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 8 },
+      "targets": [
+        {
+          "expr": "repo_tokenizer_last_index_chunks{repository_type=\"$repository\"}",
+          "legendFormat": "chunks"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Last Files",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "repo_tokenizer_last_index_files{repository_type=\"$repository\"}",
+          "legendFormat": "files"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "repository",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 1,
+        "query": "label_values(repo_tokenizer_index_runs_total, repository_type)",
+        "hide": 0
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "schemaVersion": 38,
+  "version": 1
+}

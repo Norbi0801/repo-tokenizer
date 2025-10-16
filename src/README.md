@@ -1,13 +1,13 @@
-# Struktura katalogu `src`
+# `src` directory structure
 
 ```
 src/
-├─ ingest/        # moduły pobierania repozytoriów, snapshoty, diff
-├─ chunker/       # tokenizacja, strategie chunkingu, normalizacja
-├─ storage/       # warstwa zapisu (JSONL, SQLite, adaptery wektorowe)
-├─ api/           # serwer MCP/HTTP, kontrakty, streamy
-├─ cli/           # komendy repo-tokenizer-mcp (init/index/serve/export)
-└─ common/        # współdzielone utilsy, kontrakty, logowanie, konfiguracja
+├─ ingest/        # repository ingestion, snapshots, diffs
+├─ chunker/       # tokenisation, chunking strategies, normalisation
+├─ storage/       # output layer (JSONL, SQLite, vector adapters)
+├─ api/           # MCP/HTTP server, contracts, streaming
+├─ cli/           # repo-tokenizer-mcp commands (init/index/serve/export)
+└─ common/        # shared utilities, contracts, logging, configuration
 ```
 
-Każdy moduł otrzyma dedykowany podkatalog na implementację (`*.ts`/`*.rs` zgodnie z ustalonym stackiem) oraz testy w `tests/`.
+Each module gets its own subdirectory for implementation (`*.ts` or `*.rs` as defined in the stack) and matching tests inside `tests/`.

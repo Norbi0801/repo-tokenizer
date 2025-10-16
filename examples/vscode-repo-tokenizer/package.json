@@ -1,0 +1,23 @@
+{
+  "name": "repo-tokenizer-helper",
+  "displayName": "Repo Tokenizer Helper",
+  "description": "Sample VS Code integration that runs repo-tokenizer commands from the editor.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "activationEvents": [
+    "onCommand:repoTokenizer.indexWorkspace"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "repoTokenizer.indexWorkspace",
+        "title": "Repo Tokenizer: Index Workspace"
+      }
+    ]
+  },
+  "categories": ["Other"],
+  "license": "MIT"
+}

@@ -55,6 +55,42 @@ function mergeConfigs(base: RepoTokenizerConfig, overlay: Partial<Omit<RepoToken
       ...base.server,
       ...overlay.server,
     },
+    integrations: mergeIntegrations(base.integrations, overlay.integrations),
     repository: overlay.repository ?? base.repository,
   };
+}
+
+function mergeIntegrations(
+  base?: RepoTokenizerConfig['integrations'],
+  overlay?: RepoTokenizerConfig['integrations'],
+): RepoTokenizerConfig['integrations'] {
+  if (!base && !overlay) {
+    return undefined;
+  }
+
+  const github = base?.github && overlay?.github
+    ? { ...base.github, ...overlay.github }
+    : overlay?.github ?? base?.github;
+
+  const gitlab = base?.gitlab && overlay?.gitlab
+    ? { ...base.gitlab, ...overlay.gitlab }
+    : overlay?.gitlab ?? base?.gitlab;
+
+  const pullRequests = {
+    ...base?.pullRequests,
+    ...overlay?.pullRequests,
+  };
+
+  const result: RepoTokenizerConfig['integrations'] = {};
+  if (github) {
+    result.github = github;
+  }
+  if (gitlab) {
+    result.gitlab = gitlab;
+  }
+  if (pullRequests && Object.keys(pullRequests).length > 0) {
+    result.pullRequests = pullRequests;
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
 }

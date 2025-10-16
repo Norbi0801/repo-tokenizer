@@ -14,6 +14,14 @@ import {
 } from './types';
 import { detectWorkspaces } from './workspace';
 
+export interface GitBlameLine {
+  line: number;
+  commit: string;
+  author: string;
+  summary: string;
+  timestamp: number;
+}
+
 export interface GitRepositoryConfig {
   /**
    * Local filesystem path to the repository.
@@ -105,6 +113,63 @@ export class GitRepository {
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     });
     return stdout.trim();
+  }
+
+  async blame(path: string, ref?: string): Promise<GitBlameLine[]> {
+    const cwd = await this.ensureLocalPath();
+    const args = ['blame', '--line-porcelain'];
+    if (ref) {
+      args.push(ref);
+    }
+    args.push('--', path);
+    const { stdout } = await runCommand('git', args, {
+      cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+
+    const lines = stdout.split('\n');
+    const result: GitBlameLine[] = [];
+    let current: {
+      line?: number;
+      commit?: string;
+      author?: string;
+      summary?: string;
+      timestamp?: number;
+    } = {};
+
+    for (const raw of lines) {
+      if (!raw) {
+        continue;
+      }
+      if (raw.startsWith('\t')) {
+        if (current.commit && current.line !== undefined) {
+          result.push({
+            line: current.line,
+            commit: current.commit,
+            author: current.author ?? 'unknown',
+            summary: current.summary ?? '',
+            timestamp: current.timestamp ?? 0,
+          });
+        }
+        current = {};
+        continue;
+      }
+      if (!current.commit) {
+        const [commit, , finalLine] = raw.split(' ');
+        current.commit = commit;
+        current.line = Number.parseInt(finalLine ?? '0', 10);
+        continue;
+      }
+      if (raw.startsWith('author ')) {
+        current.author = raw.slice('author '.length);
+      } else if (raw.startsWith('summary ')) {
+        current.summary = raw.slice('summary '.length);
+      } else if (raw.startsWith('author-time ')) {
+        current.timestamp = Number.parseInt(raw.slice('author-time '.length), 10);
+      }
+    }
+
+    return result;
   }
 
   async getDefaultBranch(): Promise<string | undefined> {

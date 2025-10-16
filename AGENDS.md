@@ -1,4 +1,4 @@
-## Wytyczne dla agenta Codex
+## Guidelines for the Codex agent
 
-- Przy każdej zmianie kodu **zawsze** przygotuj odpowiadające testy jednostkowe.
-- Testy muszą pokrywać zarówno scenariusze typowe, jak i wszystkie zidentyfikowane przypadki brzegowe.
+- Always accompany every code change with unit tests.
+- Tests must cover both the standard flow and every identified edge case.

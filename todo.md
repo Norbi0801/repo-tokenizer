@@ -1,81 +1,83 @@
-# Plan wdrożenia repo-tokenizer
+# repo-tokenizer rollout plan
 
-## Faza 0 – Przygotowanie projektu
-- [x] Zatwierdzić zakres funkcjonalności i priorytety wdrożenia na podstawie `features.md`.
-- [x] Opracować architekturę wysokiego poziomu (pipeline ingest → chunking → storage → API) wraz z diagramem przepływu.
-- [x] Ustalić stack technologiczny (język, frameworki, storage) i założyć repozytorium z bazową strukturą katalogów.
-- [x] Skonfigurować automatyzację: CI z lint/test, podstawowe reguły bezpieczeństwa, szablony PR/issue.
+# Stage 0
 
-## Faza 1 – Obsługa repozytoriów
-- [x] Zaimplementować moduł odczytu repozytoriów Git (lokalnych i zdalnych) z obsługą gałęzi/commitów/tagów.
-- [x] Zapewnić respektowanie `.gitignore`, `global .gitignore` i `.git/info/exclude` + możliwość dodatkowych wzorców glob/regex.
-- [x] Dodać wykrywanie monorepo i ograniczanie po workspace (npm/yarn/go) oraz ścieżkach/pakietach.
-- [x] Dodać wsparcie dla snapshotów read-only oraz pracy na archiwach (`.tar`, `.zip`) i katalogach bez Git.
-- [x] Zaimplementować tryb sparse checkout/sparse index dla bardzo dużych repozytoriów.
-- [x] Wprowadzić pinowanie źródła do commita/merge-base i deterministyczne snapshoty (hash + metadane).
+## Phase 0 - Project preparation
+- [x] Approve the feature scope and delivery priorities based on `features.md`.
+- [x] Define the high level architecture (ingest pipeline -> chunking -> storage -> API) together with a flow diagram.
+- [x] Choose the technology stack (language, frameworks, storage) and create the repository with the base directory structure.
+- [x] Configure automation: CI with lint/test, basic security rules, PR/issue templates.
 
-## Faza 2 – Tokenizacja i chunking
-- [x] Zaprojektować plugin interface dla tokenizerów i zaimplementować adaptery (np. tiktoken, sentencepiece).
-- [x] Dostarczyć podstawowe tryby chunkingu: stały rozmiar (linie, tokeny), sliding window, „by file section”.
-- [x] Wprowadzić adaptacyjny chunking (łączenie małych plików, dzielenie dużych) oraz konfigurowalne overlapy.
-- [x] Zaimplementować budżet kontekstu z automatycznym doborem rozmiaru chunków względem limitu tokenów.
-- [x] Wygenerować stabilne identyfikatory chunków (content hash + ścieżka) i deterministyczne sortowanie wyników.
-- [x] Przygotować zestaw testów porównawczych chunkingu (różne języki, małe/duże pliki).
+## Phase 1 - Repository handling
+- [x] Implement Git repository ingestion (local and remote) with branch/commit/tag awareness.
+- [x] Respect `.gitignore`, `global .gitignore`, and `.git/info/exclude` plus allow extra glob/regex patterns.
+- [x] Detect monorepos and support scoping by workspace (npm/yarn/go) as well as paths/packages.
+- [x] Support read only snapshots and operation on archives (`.tar`, `.zip`) and plain directories.
+- [x] Implement sparse checkout/sparse index mode for very large repositories.
+- [x] Allow pinning to a commit or merge base and produce deterministic snapshots (hash plus metadata).
 
-## Faza 3 – Normalizacja i filtracja treści
-- [x] Wykrywać i pomijać pliki binarne/duże według rozmiaru, rozszerzeń i heurystyk MIME.
-- [x] Auto-wykrywać pliki generowane (`dist`, `build`, `.min.js`, `vendor`) oraz noise (licencje, boilerplate).
-- [x] Normalizować końcówki linii, usuwać BOM i nadmiarowe spacje według konfiguracji.
-- [x] Zaimplementować deduplikację treści (hash) oraz sanitizację wg reguł (sekrety, zakazane tokeny, komentarze generowane).
-- [x] Udokumentować mechanizmy filtracji i zapewnić możliwość testowania wzorców (np. tryb dry-run).
+## Phase 2 - Tokenisation and chunking
+- [x] Design the tokenizer plugin interface and implement adapters (for example tiktoken, sentencepiece).
+- [x] Deliver core chunking modes: fixed size (lines, tokens), sliding window, and by file section.
+- [x] Add adaptive chunking (merging small files, splitting large files) and configurable overlaps.
+- [x] Implement a context budget with automatic chunk sizing relative to token limits.
+- [x] Generate stable chunk identifiers (content hash plus path) with deterministic sorting.
+- [x] Prepare comparative chunking tests (different languages, small/large files).
 
-## Faza 4 – API, eksport i CLI
-- [x] Zaimplementować MCP server z narzędziami `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
-- [x] Przygotować formaty eksportu JSONL i SQLite oraz strumieniowanie wyników z kontrolą back-pressure.
-- [x] Opracować SDK/klientów referencyjnych (Node.js/Python) i wygenerować specyfikację OpenAPI.
-- [x] Dodać webhooki/kolejki (SQS/NATS) do asynchronicznej dostawy indeksów.
-- [x] Dostarczyć CLI (`init`, `index`, `serve`, `export`) z konfiguracją YAML/TOML, profilami i autouzupełnianiem powłoki.
-- [x] Udokumentować API, CLI i przykładowe przepływy integracyjne.
+## Phase 3 - Content normalisation and filtering
+- [x] Detect and skip binary or oversized files based on size, extension, and MIME heuristics.
+- [x] Auto detect generated artefacts (`dist`, `build`, `.min.js`, `vendor`) and common noise (licence boilerplate).
+- [x] Normalise end of line characters, remove BOM, and trim trailing whitespace per configuration.
+- [x] Implement content deduplication (hash) and sanitisation rules (secrets, banned tokens, generated comments).
+- [x] Document filtering mechanics and expose a way to test patterns (for example dry run mode).
 
-## Faza 5 – Inkrementalne aktualizacje i bezpieczeństwo
-- [x] Zaimplementować analizę diff (git diff vs ostatni snapshot) oraz cache tokenizacji po hashach treści.
-- [x] Dodać tryb watch (fsnotify/inotify) i harmonogramy reindeksacji (cron/CI).
-- [x] Wprowadzić maskowanie sekretów, integracje z zewnętrznymi skanerami i redakcję logów/eksportów.
-- [x] Zapewnić szyfrowanie eksportów (AES/GPG) oraz podpisy hash (SHA-256) do weryfikacji integralności.
-- [x] Zweryfikować zgodność z wymaganiami air-gap (brak telemetrii, brak zależności sieciowych w trybie offline).
+## Phase 4 - API, export, and CLI
+- [x] Implement the MCP server with tools `list_files`, `get_file`, `list_chunks`, `get_chunk`, `search_text`, `search_symbols`.
+- [x] Provide JSONL and SQLite export formats with result streaming and back pressure control.
+- [x] Prepare reference SDKs/clients (Node.js/Python) and generate the OpenAPI spec.
+- [x] Add webhook/queue delivery (SQS/NATS) for asynchronous exports.
+- [x] Ship the CLI (`init`, `index`, `serve`, `export`) with YAML/TOML configuration, profiles, and shell completion.
+- [x] Document the API, CLI, and example integration flows.
 
-## Faza 6 – Integracje, wydajność i obserwowalność
-- [x] Obsłużyć Git submodules, Git LFS oraz worktrees w pipeline'ie ingestu.
-- [ ] Dostosować integracje z GitHub/GitLab (indeksowanie PR diff, komentarze, status checks).
-- [ ] Przygotować hooki (pre-commit, job CI „index repo”) i raportowanie metryk do pipeline'ów.
-- [ ] Zaimplementować równoległe przetwarzanie, back-pressure IO, sharding indeksu i mechanizmy resume.
-- [ ] Dostarczyć metryki Prometheus/OTel, dashboardy Grafana/Datadog oraz health-checki readiness/liveness.
-- [ ] Zintegrować profilery CPU/heap i trace’owanie długotrwałych zadań.
+## Phase 5 - Incremental updates and security
+- [x] Implement diff analysis (git diff versus last snapshot) and tokenisation cache keyed by content hash.
+- [x] Add watch mode (fsnotify/inotify) and scheduled reindexing (cron/CI).
+- [x] Provide secret masking, integration with external scanners, and redaction for logs/exports.
+- [x] Ensure export encryption (AES/GPG) plus hash signatures (SHA-256) for integrity verification.
+- [x] Confirm air gap compliance (no telemetry, no network dependencies in offline mode).
 
-## Faza 7 – Doświadczenie deweloperów i interfejsy
-- [ ] Zapewnić rozbudowane logowanie (levele), tryb dry-run i raporty jakości chunków/diff snapshotów.
-- [ ] Przygotować zestawy testowych repo (JS/TS, Python, Java, Go, Rust) oraz generator sample datasetów.
-- [ ] Stworzyć TUI/HTML raport (rozmiary, rozkład języków, najcięższe pliki) oraz pluginy IDE (VS Code/JetBrains).
-- [ ] Opracować integrację web (self-service) i kontekstowe MCP tools (`diff_chunks`, `blame`, `resolve_ref`, `context_pack`).
-- [ ] Udokumentować dobre praktyki użytkowania i przygotować tutoriale/dev guides.
+## Phase 6 - Integrations, performance, and observability
+- [x] Support Git submodules, Git LFS, and worktrees in the ingest pipeline.
+- [x] Deliver GitHub/GitLab integrations (PR diff indexing, summaries, status checks).
+- [x] Prepare hooks (pre-commit, CI "index repo" job) and metrics export for pipelines.
+- [x] Implement parallel processing, IO back pressure, index sharding, and resume mechanisms.
+- [x] Provide Prometheus/OTel metrics, Grafana/Datadog dashboards, and readiness/liveness health checks.
+- [x] Integrate CPU/heap profilers and tracing for long running jobs.
 
-## Faza 8 – Reguły domenowe, formaty i kolejne kroki
-- [ ] Wdrożyć licencyjną filtrację, anonimizację PII i reguły branżowe (SOX/GDPR) jako zestawy konfiguracyjne.
-- [ ] Dodać eksport Parquet, snapshoty delta i manifesty MLOps, wraz z adapterami do FAISS/Qdrant/pgvector.
-- [ ] Zaprojektować i wdrożyć system rekomendacji kontekstu oraz inteligentne profile chunkingu per język.
-- [ ] Zbudować mapowanie test ⇄ plik źródłowy oraz indeks symboli/graf zależności.
-- [ ] Przygotować roadmapę na dalsze funkcje (embeddingi, hybrydowe wyszukiwanie, powiadomienia o jakości indeksu).
+## Phase 7 - Developer experience and interfaces
+- [x] Offer verbose logging (levels), dry run mode, and chunk quality/diff reports.
+- [x] Prepare sample repositories (JS/TS, Python, Java, Go, Rust) and a dataset generator.
+- [x] Create a TUI/HTML report (sizes, language mix, heaviest files) and IDE plugins (VS Code/JetBrains).
+- [x] Build web self service integration and MCP tools (`diff_chunks`, `blame`, `resolve_ref`, `context_pack`).
+- [x] Document best practices and ship tutorials/developer guides.
 
-## Faza 9 – Modernizacja zależności
-- [ ] Zastąpić `glob@7.x` wersją `^9` (lub kompatybilnym zamiennikiem) i zweryfikować wpływ na kod.
-- [ ] Usunąć `inflight@1.0.6`, migrując na rekomendowany mechanizm (`lru-cache` lub natywne Promise caching).
-- [ ] Podnieść `rimraf` do `^4` i zaktualizować skrypty build/cleanup.
-- [ ] Zastąpić `@humanwhocodes/config-array` oraz `@humanwhocodes/object-schema` wersjami `@eslint/*`.
-- [ ] Zaktualizować `eslint` do wspieranej wersji zgodnie z polityką ESLint.
+## Phase 8 - Domain rules, formats, and future work
+- [x] Implement licence based filtering, PII anonymisation, and regulatory rule sets (SOX/GDPR).
+- [x] Add Parquet export, delta snapshots, and MLOps manifests plus adapters for FAISS/Qdrant/pgvector.
+- [x] Design and implement the context recommendation system and language specific chunking profiles.
+- [x] Build test to source file mapping and the symbol index/dependency graph.
+- [x] Prepare the roadmap for embeddings, hybrid search, and quality alerts.
 
-## Faza 10 – Stabilność i dokumentacja
-- [ ] Naprawić `README.md` (usunięcie znaków NUL, odtworzenie podstawowej dokumentacji projektu).
-- [ ] Zsynchronizować typy (np. `IndexOptions` ↔ `IndexingConfig`) i zapewnić, że `npm run build/test` przechodzą w trybie strict.
-- [ ] Dodać efektywny diff dla repo filesystemowych (mtime/hash cache) i pokryć testami scenariusze watch/incremental.
-- [ ] Wprowadzić fallback/detekcję dla `tar`/`unzip` w `openArchive` oraz testy dla brakujących narzędzi.
-- [ ] Zweryfikować konfigurację build (`tsconfig.rootDir`) i podjąć decyzję ws. publikowania `dist/` do VCS.
+## Phase 9 - Dependency modernisation
+- [ ] Replace `glob@7.x` with version `^9` (or a compatible alternative) and verify the impact on code.
+- [ ] Remove `inflight@1.0.6`, migrating to the recommended approach (`lru-cache` or native promise caching).
+- [ ] Upgrade `rimraf` to `^4` and update build/cleanup scripts.
+- [ ] Replace `@humanwhocodes/config-array` and `@humanwhocodes/object-schema` with the new `@eslint/*` packages.
+- [ ] Update `eslint` to a supported release aligned with the ESLint support policy.
+
+## Phase 10 - Stability and documentation
+- [ ] Fix `README.md` (remove NUL characters, restore baseline project documentation).
+- [ ] Align shared types (for example `IndexOptions` vs `IndexingConfig`) and ensure `npm run build/test` pass in strict mode.
+- [ ] Add an efficient file system diff for repositories (mtime/hash cache) and cover watch/incremental scenarios with tests.
+- [ ] Provide fallback detection for `tar`/`unzip` in `openArchive` plus tests for missing tooling.
+- [ ] Review build configuration (`tsconfig.rootDir`) and decide whether to publish `dist/` to VCS.
