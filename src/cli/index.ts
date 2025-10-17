@@ -879,10 +879,10 @@ export async function runCli(argv = process.argv) {
       log.info(`Server listening on http://${host}:${port}`);
       if (config.indexing) {
         void (async () => {
+          const correlationId = randomUUID();
           try {
             log.info('Starting background index bootstrap');
             const startTime = performance.now();
-            const correlationId = randomUUID();
             server.mcp?.broadcastEvent('indexing.started', {
               correlationId,
               ref: config.indexing?.ref ?? 'HEAD',

@@ -69,11 +69,11 @@
 - [x] Prepare the roadmap for embeddings, hybrid search, and quality alerts.
 
 ## Phase 9 - Dependency modernisation
-- [ ] Replace `glob@7.x` with version `^9` (or a compatible alternative) and verify the impact on code.
-- [ ] Remove `inflight@1.0.6`, migrating to the recommended approach (`lru-cache` or native promise caching).
-- [ ] Upgrade `rimraf` to `^4` and update build/cleanup scripts.
-- [ ] Replace `@humanwhocodes/config-array` and `@humanwhocodes/object-schema` with the new `@eslint/*` packages.
-- [ ] Update `eslint` to a supported release aligned with the ESLint support policy.
+- [x] Replace `glob@7.x` with version `^9` (or a compatible alternative) and verify the impact on code.
+- [x] Remove `inflight@1.0.6`, migrating to the recommended approach (`lru-cache` or native promise caching).
+- [x] Upgrade `rimraf` to `^4` and update build/cleanup scripts.
+- [x] Replace `@humanwhocodes/config-array` and `@humanwhocodes/object-schema` with the new `@eslint/*` packages.
+- [x] Update `eslint` to a supported release aligned with the ESLint support policy.
 
 ## Phase 10 - Stability and documentation
 - [ ] Fix `README.md` (remove NUL characters, restore baseline project documentation).
@@ -92,3 +92,73 @@
 - [x] Opracować harmonogram wdrożenia: MVP (kluczowe akcje), beta (feedback partnerów), GA (pełne pokrycie REST + monitoring i alerty). (docs/mcp/channel-rollout.md#L101)
 - [x] Utworzyć tabelę „REST → MCP capability” jako artefakt śledzący migrację i postęp prac. (docs/mcp/channel-rollout.md#L5)
 - [x] Przeprowadzić warsztat z zespołem bezpieczeństwa w celu zatwierdzenia modelu autoryzacji MCP i wymagań audytowych. (docs/mcp/channel-rollout.md#L109)
+
+## Phase 12 - MCP hardening and lifecycle
+- [ ] Dokończyć implementację strumieniowania zasobów MCP (chunked export, progresywne odpowiedzi) z obsługą back pressure.
+- [ ] Wprowadzić negocjację wersji manifestu oraz kontrolę kompatybilności narzędzi per klient.
+- [ ] Zaimplementować mechanizm keep-alive/heartbeat i automatyczne odtwarzanie sesji dla długo działających połączeń.
+- [ ] Dodać metryki MCP (liczniki wywołań, błędów, przepustowość) oraz alerty SLO.
+- [ ] Przygotować testy zgodności protokołu z referencyjnymi klientami (Node/Python) i pipeline CI.
+
+## Phase 13 - SDK i ekosystem deweloperski
+- [ ] Wygenerować typowane SDK (TypeScript, Python) na podstawie kontraktów MCP/REST i opublikować w rejestrach.
+- [ ] Dostarczyć przykładowe integracje (VS Code task, GitHub Action, JetBrains) korzystające z SDK.
+- [ ] Zaimplementować generator scaffolding (`repo-tokenizer-mcp plugin create`) do uruchamiania nowych narzędzi.
+- [ ] Przygotować „cookbook” z gotowymi scenariuszami (chatbot, automatyczne code review, rekomendacje pull requestów).
+- [ ] Zebrać feedback early adopters i wprowadzić roadmapę funkcji dla partnerów.
+
+## Phase 14 - Rozproszona orkiestracja zadań
+- [ ] Zaprojektować i wdrożyć kolejkę zadań indeksujących (np. Redis/SQS) z priorytetami i retry.
+- [ ] Uruchomić skalowalne workery (container jobs) obsługujące równoległe indeksowanie wielu repozytoriów.
+- [ ] Dodać cache współdzielony dla artefaktów (tokeny, snapshoty) oraz dedykowany storage na shardowane wyniki.
+- [ ] Wprowadzić kontrolę obciążenia (limit równoległych zadań per klient) i autoscaling na podstawie metryk.
+- [ ] Udokumentować proces instalacji w środowiskach chmurowych (AWS/GCP/Azure) z referencyjną architekturą.
+
+## Phase 15 - Wielodostęp i kontrola dostępu
+- [ ] Wprowadzić model organizacja/projekt z izolacją danych i konfiguracji indeksowania.
+- [ ] Rozszerzyć role MCP o RBAC (reader/editor/maintainer/admin) z możliwością delegacji uprawnień.
+- [ ] Dodać limity zapytań i indeksowań per token/tenant wraz z raportowaniem wykorzystania.
+- [ ] Zapisywać pełen audit log wywołań MCP/REST (parametry, identyfikacja klienta, wynik) i eksporotwać do SIEM.
+- [ ] Udostępnić panel administracyjny CLI/API do zarządzania tokenami i budżetami.
+
+## Phase 16 - Strumień zmian i natychmiastowe aktualizacje
+- [ ] Zaimplementować wykrywanie zmian „near real-time” (git hooks, watcher + debounce) i publikację delty poprzez MCP.
+- [ ] Dodać kanał eventów `indexing.progress` z granularnym stanem (kolejkowanie, chunking, eksport).
+- [ ] Zapewnić buforowanie zmian offline i późniejsze odtworzenie gdy połączenie MCP wróci.
+- [ ] Rozszerzyć CLI o tryb `serve --push-updates` do pracy jako lokalny agent synchronizujący.
+- [ ] Przygotować testy wydajnościowe dla dużych strumieni zmian (100k zdarzeń/h).
+
+## Phase 17 - Zaawansowana analiza kodu
+- [ ] Zbudować wielojęzyczny graf wywołań (call graph) oraz mapę zależności symboli pomiędzy modułami.
+- [ ] Wprowadzić heurystyki wykrywania długu technicznego (martwe pliki, duplikaty chunków, brak testów).
+- [ ] Generować automatyczne raporty trendów (z biegiem czasu) i udostępniać je przez MCP/CLI.
+- [ ] Rozszerzyć rekomendacje o kontekst domenowy (policy findings, znalezione wzorce anty-patternów).
+- [ ] Zintegrować się z zewnętrznymi źródłami wiedzy (issue tracker, incidents) dla pełnych insightów.
+
+## Phase 18 - Embeddings i hybrydowe wyszukiwanie
+- [ ] Wdrożyć pipeline generowania embeddingów (batched, async) z możliwością wyboru modelu (OpenAI, local).
+- [ ] Zintegrować streaming wyników hybrydowych (BM25 + wektor) przez MCP `search_hybrid`.
+- [ ] Zaimplementować reranking (cross-encoder) oraz personalizację wyników względem historii użytkownika.
+- [ ] Zapewnić mechanizmy odświeżania embeddingów przy zmianach dużych plików (partial re-embed).
+- [ ] Dodać testy jakości (NDCG/MRR) na publicznych repo i raportować regresje.
+
+## Phase 19 - Panel webowy i automatyzacja workflow
+- [ ] Stworzyć SPA (React/Svelte) pokazujące indeksy, status zadań, rekomendacje i alerty.
+- [ ] Udostępnić konfigurację indeksowania z poziomu UI (include/exclude, profile chunkingu, harmonogramy).
+- [ ] Zaimplementować kreator workflow (np. automatyczne wysyłanie raportów do Slacka/Teams).
+- [ ] Wprowadzić mechanizm raportów mailowych (dzienne/tygodniowe) z wybranymi metrykami.
+- [ ] Dodać integrację SSO (SAML/OIDC) dla panelu oraz obsługę ról zgodnie z RBAC.
+
+## Phase 20 - Packaging i wdrożenia
+- [ ] Przygotować obrazy kontenerowe (multi-arch) oraz publikację w GHCR/ECR.
+- [ ] Dostarczyć Helm Chart / Terraform module z opcjonalnymi komponentami (queue, storage, metrics).
+- [ ] Zautomatyzować aktualizacje (rolling upgrades, migracje schematów) oraz rollback.
+- [ ] Opracować scenariusze disaster recovery (backup indeksów, replikacja storage).
+- [ ] Dodać testy infrastrukturalne (smoke tests) uruchamiane po wdrożeniu.
+
+## Phase 21 - Niezawodność i compliance enterprise
+- [ ] Zdefiniować SLO (czas odpowiedzi MCP/REST, sukces indeksowań) i wdrożyć monitorowanie zgodności.
+- [ ] Przeprowadzić testy chaos engineering (awarie workerów, sieci) oraz przygotować runbooki.
+- [ ] Wprowadzić polityki retencji danych, mechanizmy „right to be forgotten” i anonimisation request flow.
+- [ ] Uzyskać zgodność z normami (SOC2 Type II, ISO 27001) oraz zebrać artefakty dowodowe.
+- [ ] Zorganizować bug bounty/internal security review i zamknąć krytyczne ryzyka.

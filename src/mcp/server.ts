@@ -2,9 +2,11 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
+import type { RawData } from 'ws';
 import { getLogger } from '../common/logger';
 import { McpToolAdapter } from './adapter';
 import { McpInvocationContext, McpServerOptions, McpSessionClaims, McpTransport } from './types';
+import type { McpRoleTokenConfig, ServerMcpConfig } from '../config';
 import pkg from '../../package.json';
 
 interface TokenEntry {
@@ -54,7 +56,7 @@ export class McpServer implements McpTransport {
     this.path = normalizePath(options.config?.path);
     this.allowAnonymous = options.config?.allowAnonymous ?? false;
     this.defaultRoles = new Set(options.config?.defaultRoles ?? ['reader']);
-    this.tokenIndex = this.buildTokenIndex(options.config?.tokens);
+    this.tokenIndex = this.buildTokenIndex(options.config);
   }
 
   shouldHandleUpgrade(request: IncomingMessage): boolean {
@@ -88,12 +90,13 @@ export class McpServer implements McpTransport {
     }
   }
 
-  private buildTokenIndex(tokens?: McpServerOptions['config']['tokens']): TokenEntry[] {
+  private buildTokenIndex(config?: ServerMcpConfig): TokenEntry[] {
+    const tokens = config?.tokens;
     if (!tokens || tokens.length === 0) {
       return [];
     }
     const entries: TokenEntry[] = [];
-    tokens.forEach((tokenConfig, index) => {
+    tokens.forEach((tokenConfig: McpRoleTokenConfig, index: number) => {
       const value = process.env[tokenConfig.tokenEnv];
       if (!value) {
         this.log.warn(`Token env "${tokenConfig.tokenEnv}" not set; skipping MCP token entry.`);
@@ -138,7 +141,7 @@ export class McpServer implements McpTransport {
     this.sendWelcome(session);
   }
 
-  private async handleMessage(session: McpSession, raw: WebSocket.RawData): Promise<void> {
+  private async handleMessage(session: McpSession, raw: RawData): Promise<void> {
     const payload = typeof raw === 'string' ? raw : raw.toString('utf8');
     let message: any;
     try {
