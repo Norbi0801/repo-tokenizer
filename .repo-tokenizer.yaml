@@ -1,0 +1,38 @@
+repository:
+  type: filesystem
+  path: ./
+indexing:
+  tokenizerId: basic
+  chunking:
+    strategy: lines
+  includePaths:
+    - src/**
+    - tests/**
+    - docs/**
+  excludeGlobs:
+    - node_modules/**
+    - dist/**
+    - .git/**
+    - tmp-tests/**
+  scanSecrets: true
+export:
+  format: jsonl
+  output: ./data/index.jsonl
+server:
+  host: 127.0.0.1
+  port: 4000
+  webhookUrl: null
+  queueName: null
+integrations:
+  pullRequests:
+    defaultProvider: github
+    autoComment: false
+    autoStatusCheck: false
+    failOnSecretFindings: false
+    statusContext: repo-tokenizer/index
+    statusTargetUrl: null
+    commentTemplate: null
+  github:
+    owner: Norbi0801
+    repo: repo-tokenizer
+    tokenEnv: GITHUB_TOKEN

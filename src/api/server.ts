@@ -2,7 +2,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { performance } from 'node:perf_hooks';
 import { IndexManager } from '../indexer';
 import { RepositorySpec } from '../ingest';
-import { IndexOptions, PullRequestIdentifier, PullRequestIndexOptions } from '../indexer/types';
+import { IndexOptions, PullRequestIdentifier, PullRequestIndexOptions, IndexResult } from '../indexer/types';
 import { exportIndexToJsonl } from '../exporters/jsonl';
 import { buildSqliteBuffer } from '../exporters/sqlite';
 import { IndexNotifier, NotifierOptions } from './notifier';
@@ -28,24 +28,42 @@ interface ServerOptions {
   integrations?: IntegrationsConfig;
 }
 
-export function createServer(indexManager: IndexManager, options: ServerOptions): FastifyInstance {
+export interface RepoTokenizerServer extends FastifyInstance {
+  applyBootstrap(result: IndexResult): void;
+}
+
+export function createServer(indexManager: IndexManager, options: ServerOptions): RepoTokenizerServer {
   const log = getLogger('server');
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false }) as unknown as RepoTokenizerServer;
   const { spec, indexOptions, integrations } = options;
   const notifier = options.notifier ? new IndexNotifier(options.notifier) : undefined;
   let isReady = Boolean(indexManager.getIndex(spec, indexOptions?.ref));
   let lastIndex = indexOptions?.ref ? indexManager.getIndex(spec, indexOptions.ref) : undefined;
   let previousIndex = undefined as typeof lastIndex;
+  app.applyBootstrap = (result: IndexResult) => {
+    previousIndex = lastIndex;
+    lastIndex = result;
+    isReady = true;
+  };
 
   app.get('/health', async () => ({ status: 'ok' }));
 
   app.get('/live', async () => ({ status: 'ok' }));
 
   app.get('/ready', async (request, reply) => {
-    if (!isReady) {
-      reply.status(503);
+    let ready = isReady || Boolean(lastIndex);
+    if (!ready) {
+      const existing = indexManager.getIndex(spec, indexOptions?.ref);
+      if (existing) {
+        app.applyBootstrap(existing);
+        ready = true;
+      }
     }
-    return { status: isReady ? 'ok' : 'starting' };
+    if (!ready) {
+      reply.status(503);
+      return { status: 'starting' };
+    }
+    return { status: 'ok' };
   });
 
   app.get('/metrics', async (request, reply) => {
@@ -211,9 +229,7 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
       repositoryType: spec.type,
     };
     recordIndexMetrics(metrics);
-    previousIndex = lastIndex;
-    lastIndex = result;
-    isReady = true;
+    app.applyBootstrap(result);
     if (notifier) {
       await notifier.notify({
         specPath: spec.path,
@@ -317,9 +333,7 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
       repositoryType: spec.type,
     };
     recordIndexMetrics(metrics);
-    isReady = true;
-    previousIndex = lastIndex;
-    lastIndex = result.index;
+    app.applyBootstrap(result.index);
     log.info('Pull request indexed', {
       provider,
       number: result.pullRequest.number,

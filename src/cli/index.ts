@@ -854,27 +854,6 @@ export async function runCli(argv = process.argv) {
       const log = getLogger('cli:serve');
       const config = await loadConfigOrExit(options.config, options.profile);
       const manager = new IndexManager();
-      if (config.indexing) {
-        const startTime = performance.now();
-        const initial = await withSpan(
-          'repo-tokenizer.index.bootstrap',
-          {
-            'repo.tokenizer.repository_type': config.repository.type,
-          },
-          () => manager.indexRepository(config.repository, config.indexing),
-        );
-        const durationMs = Math.round((performance.now() - startTime) * 100) / 100;
-        recordIndexMetrics({
-          timestamp: new Date().toISOString(),
-          ref: initial.ref ?? config.indexing?.ref ?? 'HEAD',
-          files: initial.files.length,
-          chunks: initial.chunks.length,
-          secrets: initial.secretFindings.length,
-          durationMs,
-          incremental: Boolean(config.indexing?.incremental),
-          repositoryType: config.repository.type,
-        });
-      }
       const port = options.port ? Number(options.port) : config.server?.port ?? 4000;
       const host = config.server?.host ?? '0.0.0.0';
       const notifierOptions = config.server?.airGap
@@ -891,6 +870,38 @@ export async function runCli(argv = process.argv) {
       });
       await server.listen({ port, host });
       log.info(`Server listening on http://${host}:${port}`);
+      if (config.indexing) {
+        void (async () => {
+          try {
+            log.info('Starting background index bootstrap');
+            const startTime = performance.now();
+            const initial = await withSpan(
+              'repo-tokenizer.index.bootstrap',
+              {
+                'repo.tokenizer.repository_type': config.repository.type,
+              },
+              () => manager.indexRepository(config.repository, config.indexing),
+            );
+            const durationMs = Math.round((performance.now() - startTime) * 100) / 100;
+            const metrics = {
+              timestamp: new Date().toISOString(),
+              ref: initial.ref ?? config.indexing?.ref ?? 'HEAD',
+              files: initial.files.length,
+              chunks: initial.chunks.length,
+              secrets: initial.secretFindings.length,
+              durationMs,
+              incremental: Boolean(config.indexing?.incremental),
+              repositoryType: config.repository.type,
+            };
+            recordIndexMetrics(metrics);
+            server.applyBootstrap(initial);
+            log.info('Background index bootstrap completed', metrics);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            log.error(`Background index bootstrap failed: ${message}`);
+          }
+        })();
+      }
       });
 
   program
