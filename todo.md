@@ -81,3 +81,14 @@
 - [ ] Add an efficient file system diff for repositories (mtime/hash cache) and cover watch/incremental scenarios with tests.
 - [ ] Provide fallback detection for `tar`/`unzip` in `openArchive` plus tests for missing tooling.
 - [ ] Review build configuration (`tsconfig.rootDir`) and decide whether to publish `dist/` to VCS.
+
+## Phase 11 - MCP server channel rollout
+- [x] Skatalogować operacje dostępne w obecnym REST (`GET/POST/...`), wymagane dane wejścia/wyjścia i konteksty użytkownika; nadać priorytety funkcjom, które przechodzą do kanału MCP w pierwszej kolejności. (docs/mcp/channel-rollout.md#L5)
+- [x] Zdefiniować manifest MCP: nazwa, capabilities (narzędzia, eventy, kanały), wymagane role oraz format komunikatów; wskazać akcje synchroniczne vs strumienie zdarzeń. (docs/mcp/channel-rollout.md#L27)
+- [x] Zaprojektować warstwę adaptera tłumaczącą wywołania MCP na serwisy domenowe zamiast delegować bezpośrednio do kontrolerów REST (warstwa współdzielona). (docs/mcp/channel-rollout.md#L67)
+- [x] Ustalić strategię autoryzacji i identyfikacji klientów MCP (tokeny serwisowe, integracja z OAuth), razem z wymaganiami bezpieczeństwa (rate limiting, audyt). (docs/mcp/channel-rollout.md#L76)
+- [x] Przygotować szkic kontraktów (OpenAPI → JSON Schema → definicje narzędzi MCP) i ustalić zasady wersjonowania oraz kompatybilności. (docs/mcp/channel-rollout.md#L84)
+- [x] Zaplanować sekcję testów: walidacja kontraktów, scenariusze e2e z klientem MCP, testy obciążeniowe krytycznych komend oraz narzędzia do automatyzacji. (docs/mcp/channel-rollout.md#L93)
+- [x] Opracować harmonogram wdrożenia: MVP (kluczowe akcje), beta (feedback partnerów), GA (pełne pokrycie REST + monitoring i alerty). (docs/mcp/channel-rollout.md#L101)
+- [x] Utworzyć tabelę „REST → MCP capability” jako artefakt śledzący migrację i postęp prac. (docs/mcp/channel-rollout.md#L5)
+- [x] Przeprowadzić warsztat z zespołem bezpieczeństwa w celu zatwierdzenia modelu autoryzacji MCP i wymagań audytowych. (docs/mcp/channel-rollout.md#L109)

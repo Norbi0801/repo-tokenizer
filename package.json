@@ -6,7 +6,8 @@
     "repo-tokenizer-mcp": "dist/src/cli/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:integration": "echo 'No integration tests configured yet.'"
@@ -25,13 +26,17 @@
     "parquetjs-lite": "^0.8.7",
     "prom-client": "^14.2.0",
     "sql.js": "^1.9.0",
-    "toml": "^3.0.0"
+    "toml": "^3.0.0",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20.11.0",
-    "eslint": "^8.56.0",
+    "@types/ws": "^8.5.10",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-import": "^2.32.0",
+    "rimraf": "^4.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"

@@ -4,7 +4,7 @@ import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { createWriteStream, createReadStream } from 'node:fs';
 import chokidar from 'chokidar';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { RepoTokenizerConfig, loadConfig } from '../config';
 import { IndexManager, IndexOptions, PullRequestIdentifier, PullRequestIndexOptions } from '../indexer';
@@ -43,6 +43,12 @@ server:
   port: 4000
   webhookUrl: null
   queueName: null
+  mcp:
+    path: /mcp
+    allowAnonymous: false
+    defaultRoles:
+      - reader
+    tokens: []
 integrations:
   pullRequests:
     defaultProvider: github
@@ -861,12 +867,13 @@ export async function runCli(argv = process.argv) {
         : {
             webhookUrl: config.server?.webhookUrl,
             queueName: config.server?.queueName,
-          };
+      };
       const server = createServer(manager, {
         spec: config.repository,
         indexOptions: config.indexing,
         notifier: notifierOptions,
         integrations: config.integrations,
+        mcp: config.server?.mcp,
       });
       await server.listen({ port, host });
       log.info(`Server listening on http://${host}:${port}`);
@@ -875,6 +882,12 @@ export async function runCli(argv = process.argv) {
           try {
             log.info('Starting background index bootstrap');
             const startTime = performance.now();
+            const correlationId = randomUUID();
+            server.mcp?.broadcastEvent('indexing.started', {
+              correlationId,
+              ref: config.indexing?.ref ?? 'HEAD',
+              source: 'bootstrap',
+            });
             const initial = await withSpan(
               'repo-tokenizer.index.bootstrap',
               {
@@ -895,9 +908,21 @@ export async function runCli(argv = process.argv) {
             };
             recordIndexMetrics(metrics);
             server.applyBootstrap(initial);
+            server.mcp?.broadcastEvent('indexing.completed', {
+              correlationId,
+              ref: metrics.ref,
+              metrics,
+              source: 'bootstrap',
+            });
             log.info('Background index bootstrap completed', metrics);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
+            server.mcp?.broadcastEvent('indexing.failed', {
+              correlationId,
+              ref: config.indexing?.ref ?? 'HEAD',
+              message,
+              source: 'bootstrap',
+            });
             log.error(`Background index bootstrap failed: ${message}`);
           }
         })();

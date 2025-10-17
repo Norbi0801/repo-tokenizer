@@ -1,5 +1,6 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, FastifyReply } from 'fastify';
 import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
 import { IndexManager } from '../indexer';
 import { RepositorySpec } from '../ingest';
 import { IndexOptions, PullRequestIdentifier, PullRequestIndexOptions, IndexResult } from '../indexer/types';
@@ -7,8 +8,7 @@ import { exportIndexToJsonl } from '../exporters/jsonl';
 import { buildSqliteBuffer } from '../exporters/sqlite';
 import { IndexNotifier, NotifierOptions } from './notifier';
 import { once } from 'node:events';
-import type { IntegrationsConfig } from '../config';
-import type { GitProviderKind } from '../integrations';
+import type { IntegrationsConfig, ServerMcpConfig } from '../config';
 import {
   recordIndexMetrics,
   withSpan,
@@ -20,16 +20,21 @@ import {
 import { buildQualityReport, renderQualityReportHtml } from '../reports';
 import { getLogger } from '../common/logger';
 import { buildRecommendations } from '../recommendation';
+import { McpServer, McpToolAdapter } from '../mcp';
+import { normalizeProviderKind } from './providers';
 
 interface ServerOptions {
   spec: RepositorySpec;
   indexOptions?: IndexOptions;
   notifier?: NotifierOptions;
   integrations?: IntegrationsConfig;
+  mcp?: ServerMcpConfig;
 }
 
 export interface RepoTokenizerServer extends FastifyInstance {
   applyBootstrap(result: IndexResult): void;
+  mcp?: McpServer;
+  mcpAdapter?: McpToolAdapter;
 }
 
 export function createServer(indexManager: IndexManager, options: ServerOptions): RepoTokenizerServer {
@@ -37,14 +42,85 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
   const app = Fastify({ logger: false }) as unknown as RepoTokenizerServer;
   const { spec, indexOptions, integrations } = options;
   const notifier = options.notifier ? new IndexNotifier(options.notifier) : undefined;
+  let mcpServer: McpServer | undefined;
   let isReady = Boolean(indexManager.getIndex(spec, indexOptions?.ref));
   let lastIndex = indexOptions?.ref ? indexManager.getIndex(spec, indexOptions.ref) : undefined;
   let previousIndex = undefined as typeof lastIndex;
-  app.applyBootstrap = (result: IndexResult) => {
+  const pendingBootstraps = new Map<string, Promise<IndexResult>>();
+
+  const ensureIndex = async (ref?: string): Promise<void> => {
+    const targetRef = ref ?? indexOptions?.ref;
+    if (indexManager.getIndex(spec, targetRef)) {
+      return;
+    }
+    if (!indexOptions) {
+      throw new Error('Indexing configuration missing; cannot build index automatically.');
+    }
+    const key = targetRef ?? 'HEAD';
+    let pending = pendingBootstraps.get(key);
+    if (!pending) {
+      const runOptions: IndexOptions = {
+        ...indexOptions,
+        ref: targetRef,
+        dryRun: false,
+      };
+      pending = indexManager.indexRepository(spec, runOptions);
+      pendingBootstraps.set(key, pending);
+    }
+    try {
+      const result = await pending;
+      app.applyBootstrap(result);
+    } finally {
+      pendingBootstraps.delete(key);
+    }
+  };
+
+  const handleMissingIndex = (reply: FastifyReply, error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    reply.status(503);
+    return { error: message };
+  };
+  const handleBootstrap = (result: IndexResult) => {
     previousIndex = lastIndex;
     lastIndex = result;
     isReady = true;
+    if (mcpServer) {
+      mcpServer.broadcastEvent('health.ready', {
+        ref: result.ref ?? indexOptions?.ref ?? 'HEAD',
+        timestamp: new Date().toISOString(),
+      });
+    }
   };
+  app.applyBootstrap = handleBootstrap;
+
+  const adapter = new McpToolAdapter({
+    indexManager,
+    spec,
+    indexOptions,
+    notifier,
+    integrations,
+    emitEvent: (event, payload) => {
+      mcpServer?.broadcastEvent(event, payload);
+    },
+    onIndexCompleted: handleBootstrap,
+    defaultRoles: options.mcp?.defaultRoles,
+  });
+  app.mcpAdapter = adapter;
+
+  if (options.mcp?.enabled !== false) {
+    mcpServer = new McpServer(adapter, { config: options.mcp });
+    app.mcp = mcpServer;
+    app.server.on('upgrade', (request, socket, head) => {
+      if (!mcpServer) {
+        return;
+      }
+      if (!mcpServer.shouldHandleUpgrade(request)) {
+        return;
+      }
+      mcpServer.handleUpgrade(request, socket, head);
+    });
+    log.info('MCP server attached', { path: mcpServer.path, allowAnonymous: Boolean(options.mcp?.allowAnonymous) });
+  }
 
   app.get('/health', async () => ({ status: 'ok' }));
 
@@ -208,54 +284,78 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
     if (body?.incremental !== undefined) {
       optionsForRun.incremental = body.incremental;
     }
-    const started = performance.now();
-    const result = await withSpan(
-      'repo-tokenizer.index.server',
-      {
-        'repo.tokenizer.repository_type': spec.type,
-        'repo.tokenizer.incremental': Boolean(optionsForRun.incremental),
-      },
-      () => indexManager.indexRepository(spec, optionsForRun),
-    );
-    const durationMs = Math.round((performance.now() - started) * 100) / 100;
-    const metrics = {
-      timestamp: new Date().toISOString(),
-      ref: result.ref ?? optionsForRun.ref ?? 'HEAD',
-      files: result.files.length,
-      chunks: result.chunks.length,
-      secrets: result.secretFindings.length,
-      durationMs,
+    const correlationId = randomUUID();
+    mcpServer?.broadcastEvent('indexing.started', {
+      correlationId,
+      ref: optionsForRun.ref ?? indexOptions?.ref ?? 'HEAD',
       incremental: Boolean(optionsForRun.incremental),
-      repositoryType: spec.type,
-    };
-    recordIndexMetrics(metrics);
-    app.applyBootstrap(result);
-    if (notifier) {
-      await notifier.notify({
-        specPath: spec.path,
-        ref: result.ref,
+      source: 'index_repository',
+    });
+    const started = performance.now();
+    try {
+      const result = await withSpan(
+        'repo-tokenizer.index.server',
+        {
+          'repo.tokenizer.repository_type': spec.type,
+          'repo.tokenizer.incremental': Boolean(optionsForRun.incremental),
+        },
+        () => indexManager.indexRepository(spec, optionsForRun),
+      );
+      const durationMs = Math.round((performance.now() - started) * 100) / 100;
+      const metrics = {
+        timestamp: new Date().toISOString(),
+        ref: result.ref ?? optionsForRun.ref ?? 'HEAD',
         files: result.files.length,
         chunks: result.chunks.length,
-        createdAt: result.createdAt,
+        secrets: result.secretFindings.length,
+        durationMs,
+        incremental: Boolean(optionsForRun.incremental),
+        repositoryType: spec.type,
+      };
+      recordIndexMetrics(metrics);
+      app.applyBootstrap(result);
+      if (notifier) {
+        await notifier.notify({
+          specPath: spec.path,
+          ref: result.ref,
+          files: result.files.length,
+          chunks: result.chunks.length,
+          createdAt: result.createdAt,
+        });
+      }
+      mcpServer?.broadcastEvent('indexing.completed', {
+        correlationId,
+        ref: metrics.ref,
+        metrics,
+        source: 'index_repository',
       });
+      reply.status(202);
+      log.info('Indexing run completed', {
+        repository: spec.path,
+        files: metrics.files,
+        chunks: metrics.chunks,
+        secrets: metrics.secrets,
+        durationMs: metrics.durationMs,
+      });
+      return {
+        message: 'indexing complete',
+        files: result.files.length,
+        chunks: result.chunks.length,
+        secrets: result.secretFindings.length,
+        ref: result.ref,
+        resumeCursor: result.resumeCursor,
+        metrics,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      mcpServer?.broadcastEvent('indexing.failed', {
+        correlationId,
+        ref: optionsForRun.ref ?? indexOptions?.ref ?? 'HEAD',
+        message,
+        source: 'index_repository',
+      });
+      throw error;
     }
-    reply.status(202);
-    log.info('Indexing run completed', {
-      repository: spec.path,
-      files: metrics.files,
-      chunks: metrics.chunks,
-      secrets: metrics.secrets,
-      durationMs: metrics.durationMs,
-    });
-    return {
-      message: 'indexing complete',
-      files: result.files.length,
-      chunks: result.chunks.length,
-      secrets: result.secretFindings.length,
-      ref: result.ref,
-      resumeCursor: result.resumeCursor,
-      metrics,
-    };
   });
 
   app.post('/pull-request', async (request) => {
@@ -312,62 +412,101 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
       },
     };
 
-    const started = performance.now();
-    const result = await withSpan(
-      'repo-tokenizer.index.pull-request',
-      {
-        'repo.tokenizer.provider': provider,
-        'repo.tokenizer.repository_type': spec.type,
-      },
-      () => indexManager.indexPullRequest(spec, identifier, prOptions),
-    );
-    const durationMs = Math.round((performance.now() - started) * 100) / 100;
-    const metrics = {
-      timestamp: new Date().toISOString(),
-      ref: result.index.ref ?? prOptions.indexOptions?.ref ?? 'HEAD',
-      files: result.index.files.length,
-      chunks: result.index.chunks.length,
-      secrets: result.index.secretFindings.length,
-      durationMs,
-      incremental: Boolean(prOptions.indexOptions?.incremental),
-      repositoryType: spec.type,
-    };
-    recordIndexMetrics(metrics);
-    app.applyBootstrap(result.index);
-    log.info('Pull request indexed', {
+    const correlationId = randomUUID();
+    mcpServer?.broadcastEvent('indexing.started', {
+      correlationId,
+      ref: body.id.toString(),
       provider,
-      number: result.pullRequest.number,
-      files: metrics.files,
-      chunks: metrics.chunks,
-      secrets: metrics.secrets,
-      durationMs: metrics.durationMs,
+      source: 'index_pull_request',
     });
-    return {
-      message: 'pull request indexed',
-      provider,
-      id: result.pullRequest.number,
-      files: result.index.files.length,
-      chunks: result.index.chunks.length,
-      secrets: result.index.secretFindings.length,
-      statusSubmitted: result.statusSubmitted,
-      commentSubmitted: result.commentSubmitted,
-      status: result.statusPayload,
-      metrics,
-    };
+    const started = performance.now();
+    try {
+      const result = await withSpan(
+        'repo-tokenizer.index.pull-request',
+        {
+          'repo.tokenizer.provider': provider,
+          'repo.tokenizer.repository_type': spec.type,
+        },
+        () => indexManager.indexPullRequest(spec, identifier, prOptions),
+      );
+      const durationMs = Math.round((performance.now() - started) * 100) / 100;
+      const metrics = {
+        timestamp: new Date().toISOString(),
+        ref: result.index.ref ?? prOptions.indexOptions?.ref ?? 'HEAD',
+        files: result.index.files.length,
+        chunks: result.index.chunks.length,
+        secrets: result.index.secretFindings.length,
+        durationMs,
+        incremental: Boolean(prOptions.indexOptions?.incremental),
+        repositoryType: spec.type,
+        provider,
+        pullRequestId: result.pullRequest.number,
+      };
+      recordIndexMetrics(metrics);
+      app.applyBootstrap(result.index);
+      mcpServer?.broadcastEvent('indexing.completed', {
+        correlationId,
+        ref: metrics.ref,
+        provider,
+        pullRequestId: result.pullRequest.number,
+        metrics,
+        source: 'index_pull_request',
+      });
+      log.info('Pull request indexed', {
+        provider,
+        number: result.pullRequest.number,
+        files: metrics.files,
+        chunks: metrics.chunks,
+        secrets: metrics.secrets,
+        durationMs: metrics.durationMs,
+      });
+      return {
+        message: 'pull request indexed',
+        provider,
+        id: result.pullRequest.number,
+        files: result.index.files.length,
+        chunks: result.index.chunks.length,
+        secrets: result.index.secretFindings.length,
+        statusSubmitted: result.statusSubmitted,
+        commentSubmitted: result.commentSubmitted,
+        status: result.statusPayload,
+        metrics,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      mcpServer?.broadcastEvent('indexing.failed', {
+        correlationId,
+        ref: body.id.toString(),
+        provider,
+        message,
+        source: 'index_pull_request',
+      });
+      throw error;
+    }
   });
 
-  app.get('/files', async (request) => {
+  app.get('/files', async (request, reply) => {
     const query = request.query as { include?: string; exclude?: string; ref?: string };
     const include = query.include ? query.include.split(',') : undefined;
     const exclude = query.exclude ? query.exclude.split(',') : undefined;
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
+    }
     const files = indexManager.listFiles(spec, { ref: query.ref, include, exclude });
     return { files };
   });
 
-  app.get('/file', async (request) => {
+  app.get('/file', async (request, reply) => {
     const query = request.query as { path?: string; ref?: string };
     if (!query.path) {
       throw new Error('Missing path parameter');
+    }
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
     }
     const file = indexManager.getFile(spec, query.path, query.ref);
     return { file };
@@ -375,6 +514,11 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
 
   app.get('/chunks', async (request, reply) => {
     const query = request.query as { path?: string; lang?: string; maxTokens?: string; stream?: string; ref?: string };
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
+    }
     const chunks = indexManager.listChunks(spec, {
       ref: query.ref,
       path: query.path,
@@ -397,17 +541,27 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
     return { chunks };
   });
 
-  app.get('/chunks/:id', async (request) => {
+  app.get('/chunks/:id', async (request, reply) => {
     const params = request.params as { id: string };
     const query = request.query as { ref?: string };
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
+    }
     const chunk = indexManager.getChunk(spec, params.id, query.ref);
     return { chunk };
   });
 
-  app.get('/search', async (request) => {
+  app.get('/search', async (request, reply) => {
     const query = request.query as { q: string; pathGlob?: string; ref?: string };
     if (!query.q) {
       throw new Error('Missing q parameter');
+    }
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
     }
     const matches = indexManager.searchText(spec, query.q, {
       ref: query.ref,
@@ -416,8 +570,13 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
     return { matches };
   });
 
-  app.get('/search/symbols', async (request) => {
+  app.get('/search/symbols', async (request, reply) => {
     const query = request.query as { q?: string; ref?: string };
+    try {
+      await ensureIndex(query.ref);
+    } catch (error) {
+      return handleMissingIndex(reply, error);
+    }
     const matches = indexManager.searchSymbols(spec, query.q, { ref: query.ref });
     return { matches };
   });
@@ -447,15 +606,4 @@ export function createServer(indexManager: IndexManager, options: ServerOptions)
   });
 
   return app;
-}
-
-function normalizeProviderKind(value?: string): GitProviderKind | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const normalized = value.toLowerCase();
-  if (normalized === 'github' || normalized === 'gitlab') {
-    return normalized as GitProviderKind;
-  }
-  return undefined;
 }

@@ -6,9 +6,9 @@ indexing:
   chunking:
     strategy: lines
   includePaths:
-    - src/**
-    - tests/**
-    - docs/**
+    - src
+    - tests
+    - docs
   excludeGlobs:
     - node_modules/**
     - dist/**

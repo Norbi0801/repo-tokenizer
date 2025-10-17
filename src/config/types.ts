@@ -60,12 +60,27 @@ export interface ExportConfig {
   stream?: boolean;
 }
 
+export interface McpRoleTokenConfig {
+  tokenEnv: string;
+  roles?: string[];
+  description?: string;
+}
+
+export interface ServerMcpConfig {
+  enabled?: boolean;
+  path?: string;
+  allowAnonymous?: boolean;
+  defaultRoles?: string[];
+  tokens?: McpRoleTokenConfig[];
+}
+
 export interface ServerConfig {
   host?: string;
   port?: number;
   webhookUrl?: string;
   queueName?: string;
   airGap?: boolean;
+  mcp?: ServerMcpConfig;
 }
 
 export interface RepoTokenizerConfig {
