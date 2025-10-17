@@ -392,43 +392,73 @@
 ## Phase 20 - Packaging i wdrożenia
 - [ ] Przygotować obrazy kontenerowe (multi-arch) oraz publikację w GHCR/ECR.
   - Zbudować pipeline multi-stage (alpine/distroless).
+    - Włączyć skanowanie bezpieczeństwa (Trivy/Grype) i raporty wyników.
   - Podpisać obrazy (cosign) i dołączyć SBOM.
+    - Zautomatyzować dystrybucję SBOM do repo `artifacts/`.
   - Utrzymywać tagi wersji i kanały release (stable/beta).
+    - Zapewnić semver enforcement i publikować release manifest.
 - [ ] Dostarczyć Helm Chart / Terraform module z opcjonalnymi komponentami (queue, storage, metrics).
   - Rozdzielić moduły (core, workers, ingress).
+    - Stworzyć testy (`helm unittest`/`terraform validate`) i przykładowe wartości.
   - Zapewnić wartości domyślne + dokumentację override.
+    - Przygotować `values-enterprise.yaml` i `values-local.yaml`.
   - Przetestować instalację w kind/minikube i chmurach managed.
+    - Uruchomić test matrix (AKS, EKS, GKE) w CI nightly.
 - [ ] Zautomatyzować aktualizacje (rolling upgrades, migracje schematów) oraz rollback.
   - Przygotować migratory storage (script + migracje wsteczne).
+    - Wprowadzić testy migracji na danych przykładowych i backup.
   - Ustawić health-checki i pre-stop hooks dla zero downtime.
+    - Udokumentować sekwencję aktualizacji i rollbacku krok po kroku.
   - Wdrożyć `kubectl rollout undo`/`terraform apply` scenariusze.
+    - Zautomatyzować testy smoke po rollbacku i raporty w CI.
 - [ ] Opracować scenariusze disaster recovery (backup indeksów, replikacja storage).
   - Skonfigurować backup (snapshots, off-site) i testy odtwarzania.
+    - Zaplanować regularny chaos test DR (co kwartał) z raportem.
   - Zaplanować RPO/RTO oraz runbook DR.
+    - Opublikować runbook w Confluence/Docs z checklistą on-call.
   - Włączyć alerty o nieudanych backupach.
+    - Skonfigurować retrie + eskalację do PagerDuty.
 - [ ] Dodać testy infrastrukturalne (smoke tests) uruchamiane po wdrożeniu.
   - Stworzyć pakiet smoke tests (health, MCP connectivity, indexing).
+    - Przygotować framework testowy (curl/assert) i raport HTML.
   - Uruchamiać po każdym deploy (CI/CD pipeline).
+    - Dodać gating: brak przejścia smoke = automatyczny rollback.
   - Raportować wyniki do obserwability + Slack.
+    - Zintegrować z kanałem on-call oraz archiwizacją rezultatów.
 
 ## Phase 21 - Niezawodność i compliance enterprise
 - [ ] Zdefiniować SLO (czas odpowiedzi MCP/REST, sukces indeksowań) i wdrożyć monitorowanie zgodności.
   - Określić metryki i targety (latency p95, error rate).
+    - Uzgodnić targety z zespołem biznesowym i spisać jako kontrakt.
   - Ustawić dashboard SLO + alerty o naruszeniach.
+    - Dodać adnotacje (deploy, incydenty) do wykresów dla kontekstu.
   - Wprowadzić tygodniowe raporty SLO dla zespołu.
+    - Zautomatyzować generowanie raportu i wysyłkę do stakeholderów.
 - [ ] Przeprowadzić testy chaos engineering (awarie workerów, sieci) oraz przygotować runbooki.
   - Zaplanować eksperymenty (kill pod, latency injection, loss).
+    - Użyć narzędzi (Litmus/Gremlin) i zaplanować okno testowe.
   - Dokumentować obserwacje i usprawnienia.
+    - Stworzyć repo „chaos-reports” z checklistą remediacji.
   - Aktualizować runbooki operacyjne i playbooki on-call.
+    - Wprowadzić przeglądy kwartalne runbooków i ack zespołu.
 - [ ] Wprowadzić polityki retencji danych, mechanizmy „right to be forgotten” i anonimisation request flow.
   - Opracować konfigurację retention per tenant/region.
+    - Dodać UI/CLI do ustawiania retencji i preview skutków.
   - Dodać API do usuwania danych użytkownika (identyfikacja, potwierdzenie).
+    - Zapewnić workflow zatwierdzania i log zgłoszeń.
   - Logować i audytować wykonanie żądań prywatności.
+    - Stworzyć raport miesięczny dla zespołu compliance.
 - [ ] Uzyskać zgodność z normami (SOC2 Type II, ISO 27001) oraz zebrać artefakty dowodowe.
   - Przygotować kontrolki bezpieczeństwa/operacyjne i dowody (screenshots, raporty).
+    - Uporządkować repo artefaktów z kontrolą dostępu i wersjonowaniem.
   - Zorganizować audyt wewnętrzny i pre-assessment z zewnętrznym partnerem.
+    - Ustalić plan działań korygujących i daty realizacji.
   - Zaplanować harmonogram certyfikacji i utrzymania zgodności.
+    - Utworzyć kalendarz audytów okresowych i przypomnienia.
 - [ ] Zorganizować bug bounty/internal security review i zamknąć krytyczne ryzyka.
   - Uruchomić program nagród (platforma HackerOne/Bugcrowd).
+    - Przygotować zakres testów, zasady nagród i kanał kontaktu.
   - Reagować na zgłoszenia według SLA i utrzymywać tracker.
+    - Dodać automatyzację integracji zgłoszeń z systemem ticketowym.
   - Publikować raport bezpieczeństwa po każdej rundzie.
+    - Zamieszczać executive summary i listę zamkniętych podatności.
