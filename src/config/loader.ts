@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises';
-import { extname, resolve } from 'node:path';
+import { dirname, extname, resolve, isAbsolute } from 'node:path';
 import yaml from 'js-yaml';
 import toml from 'toml';
 import { RepoTokenizerConfig } from './types';
 
 export async function loadConfig(path: string, profile?: string): Promise<RepoTokenizerConfig> {
   const absolute = resolve(path);
+  const baseDir = dirname(absolute);
   const contents = await readFile(absolute, 'utf8');
   const ext = extname(absolute).toLowerCase();
   let parsed: RepoTokenizerConfig;
@@ -34,10 +35,10 @@ export async function loadConfig(path: string, profile?: string): Promise<RepoTo
     if (!profileConfig) {
       throw new Error(`Profile ${profile} not found in config`);
     }
-    return mergeConfigs(parsed, profileConfig);
+    return normalizeConfigPaths(mergeConfigs(parsed, profileConfig), baseDir);
   }
 
-  return parsed;
+  return normalizeConfigPaths(parsed, baseDir);
 }
 
 function mergeConfigs(base: RepoTokenizerConfig, overlay: Partial<Omit<RepoTokenizerConfig, 'profiles'>>): RepoTokenizerConfig {
@@ -93,4 +94,19 @@ function mergeIntegrations(
   }
 
   return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function normalizeConfigPaths(config: RepoTokenizerConfig, baseDir: string): RepoTokenizerConfig {
+  const repoPath = config.repository.path;
+  const absolutePath = isAbsolute(repoPath) ? repoPath : resolve(baseDir, repoPath);
+  if (absolutePath === repoPath) {
+    return config;
+  }
+  return {
+    ...config,
+    repository: {
+      ...config.repository,
+      path: absolutePath,
+    },
+  };
 }
